@@ -1,0 +1,2705 @@
+Серверная часть:
+
+const sqlite3 = require('sqlite3');
+const { open } = require('sqlite');
+
+let db;
+
+const initDb = async () => {
+    if (!db) {
+        db = await open({
+            filename: 'C:/Users/goroshek/Desktop/колледж/4 курс/sqllite/Photobooth.db',
+            driver: sqlite3.Database
+        });
+    }
+
+    // Включаем поддержку внешних ключей
+    await db.exec('PRAGMA foreign_keys = ON;');
+
+    // Роли
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS Roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL
+        )`);
+
+    // Пользователи
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS Users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role_id_FK INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT,
+            FOREIGN KEY (role_id_FK) REFERENCES Roles(id)
+        )`);
+
+    // Профили фотографов
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS Profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id_FK INTEGER NOT NULL UNIQUE,
+            city TEXT,
+            genres TEXT,
+            price_hour INTEGER,
+            description TEXT,
+            avatar_url TEXT,
+            FOREIGN KEY (user_id_FK) REFERENCES Users(id) ON DELETE CASCADE
+        )`);
+
+    // Проекты
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS Projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            profile_id_FK INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            genre TEXT,
+            shoot_date TEXT,
+            is_private INTEGER NOT NULL DEFAULT 0,
+            access_password TEXT,
+            cover_photo_url TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (profile_id_FK) REFERENCES Profiles(id) ON DELETE CASCADE
+        )`);
+
+    // Фотографии
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS Photos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id_FK INTEGER NOT NULL,
+            file_path TEXT NOT NULL,
+            uploaded_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (project_id_FK) REFERENCES Projects(id) ON DELETE CASCADE
+        )`);
+
+    // Заявки
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS Requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id_FK INTEGER,
+            photographer_id_FK INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            contact TEXT NOT NULL,
+            desired_date TEXT,
+            genre TEXT,
+            comment TEXT,
+            status TEXT NOT NULL DEFAULT 'new',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (customer_id_FK) REFERENCES Users(id),
+            FOREIGN KEY (photographer_id_FK) REFERENCES Profiles(id)
+        )`);
+
+    // Стартовые роли (если их ещё нет)
+    const rolesCount = await db.get('SELECT COUNT(*) as count FROM Roles');
+    if (rolesCount.count === 0) {
+        await db.run('INSERT INTO Roles (name) VALUES (?)', ['photographer']);
+        await db.run('INSERT INTO Roles (name) VALUES (?)', ['customer']);
+    }
+};
+
+const getDb = () => db;
+
+module.exports = {
+    initDb,
+    getDb
+};
+
+const { getDb } = require('./db');
+
+const TABLE_NAME = 'Photos';
+
+module.exports = {
+    TABLE_NAME,
+    addPhoto: async (projectId, filePath) => {
+        const result = await getDb().run(
+            `INSERT INTO ${TABLE_NAME} (project_id_FK, file_path) VALUES (?, ?)`,
+            projectId, filePath
+        );
+        return { id: result.lastID, project_id_FK: projectId, file_path: filePath };
+    },
+    getPhotos: async () => await getDb().all(`SELECT * FROM ${TABLE_NAME}`),
+    getPhotoById: async (id) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE id = ?`, id
+    ),
+    getPhotosByProject: async (projectId) => await getDb().all(
+        `SELECT * FROM ${TABLE_NAME} WHERE project_id_FK = ?`, projectId
+    ),
+    deletePhoto: async (id) => {
+        await getDb().run(`DELETE FROM ${TABLE_NAME} WHERE id = ?`, id);
+    },
+};
+
+const { getDb } = require('./db');
+
+const TABLE_NAME = 'Profiles';
+
+module.exports = {
+    TABLE_NAME,
+    addProfile: async (userId, city, genres, priceHour, description, avatarUrl) => {
+        const result = await getDb().run(
+            `INSERT INTO ${TABLE_NAME} (user_id_FK, city, genres, price_hour, description, avatar_url) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            userId, city, genres, priceHour, description, avatarUrl
+        );
+        return { id: result.lastID, user_id_FK: userId, city, genres, price_hour: priceHour };
+    },
+    getProfiles: async () => await getDb().all(`
+        SELECT p.*, u.name AS photographer_name 
+        FROM ${TABLE_NAME} p 
+        JOIN Users u ON p.user_id_FK = u.id`
+    ),
+    getProfileById: async (id) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE id = ?`, id
+    ),
+    getProfileByUserId: async (userId) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE user_id_FK = ?`, userId
+    ),
+    updateProfile: async (id, data) => {
+        await getDb().run(
+            `UPDATE ${TABLE_NAME} 
+             SET city = ?, genres = ?, price_hour = ?, description = ?, avatar_url = ? 
+             WHERE id = ?`,
+            data.city, data.genres, data.price_hour, data.description, data.avatar_url, id
+        );
+    },
+    searchProfiles: async (city, genre, maxPrice) => {
+        let query = `SELECT p.*, u.name AS photographer_name 
+                     FROM ${TABLE_NAME} p 
+                     JOIN Users u ON p.user_id_FK = u.id 
+                     WHERE 1=1`;
+        const params = [];
+        if (city) { query += ` AND p.city = ?`; params.push(city); }
+        if (genre) { query += ` AND p.genres LIKE ?`; params.push(`%${genre}%`); }
+        if (maxPrice) { query += ` AND p.price_hour <= ?`; params.push(maxPrice); }
+        return await getDb().all(query, ...params);
+    },
+    deleteProfile: async (id) => {
+        await getDb().run(`DELETE FROM ${TABLE_NAME} WHERE id = ?`, id);
+    },
+};
+
+const { getDb } = require('./db');
+
+const TABLE_NAME = 'Projects';
+
+module.exports = {
+    TABLE_NAME,
+    addProject: async (profileId, title, description, genre, shootDate, isPrivate, accessPassword, coverPhotoUrl) => {
+        const result = await getDb().run(
+            `INSERT INTO ${TABLE_NAME} 
+             (profile_id_FK, title, description, genre, shoot_date, is_private, access_password, cover_photo_url) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            profileId, title, description, genre, shootDate, isPrivate, accessPassword, coverPhotoUrl
+        );
+        return { id: result.lastID, profile_id_FK: profileId, title };
+    },
+    // Получить ВСЕ проекты профиля (для самого фотографа)
+    getAllProjectsByProfile: async (profileId) => await getDb().all(
+        `SELECT * FROM ${TABLE_NAME} WHERE profile_id_FK = ? ORDER BY created_at DESC`,
+        profileId
+    ),
+    getProjects: async () => await getDb().all(`SELECT * FROM ${TABLE_NAME}`),
+    getProjectById: async (id) => await getDb().get(
+        // Добавляем JOIN, чтобы знать, какому юзеру принадлежит проект
+        `SELECT p.*, pr.user_id_FK 
+         FROM ${TABLE_NAME} p 
+         JOIN Profiles pr ON p.profile_id_FK = pr.id 
+         WHERE p.id = ?`, id
+    ),
+    getProjectsByProfile: async (profileId) => await getDb().all(
+        `SELECT * FROM ${TABLE_NAME} WHERE profile_id_FK = ?`, profileId
+    ),
+    getPublicProjects: async () => await getDb().all(
+        `SELECT * FROM ${TABLE_NAME} WHERE is_private = 0`
+    ),
+    updateProject: async (id, data) => {
+        await getDb().run(
+            `UPDATE ${TABLE_NAME} 
+             SET title = ?, description = ?, genre = ?, shoot_date = ?, 
+                 is_private = ?, access_password = ?, cover_photo_url = ? 
+             WHERE id = ?`,
+            data.title, data.description, data.genre, data.shoot_date,
+            data.is_private, data.access_password, data.cover_photo_url, id
+        );
+    },
+    deleteProject: async (id) => {
+        await getDb().run(`DELETE FROM ${TABLE_NAME} WHERE id = ?`, id);
+    },
+};
+
+const { getDb } = require('./db');
+
+const TABLE_NAME = 'Requests';
+
+module.exports = {
+    TABLE_NAME,
+    addRequest: async (customerId, photographerId, name, contact, desiredDate, genre, comment) => {
+        const result = await getDb().run(
+            `INSERT INTO ${TABLE_NAME} 
+             (customer_id_FK, photographer_id_FK, name, contact, desired_date, genre, comment) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            customerId, photographerId, name, contact, desiredDate, genre, comment
+        );
+        return { id: result.lastID };
+    },
+    getRequests: async () => await getDb().all(`SELECT * FROM ${TABLE_NAME}`),
+    getRequestById: async (id) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE id = ?`, id
+    ),
+    getRequestsByPhotographer: async (photographerId) => await getDb().all(
+        `SELECT r.*, u.name AS customer_name 
+         FROM Requests r 
+         LEFT JOIN Users u ON r.customer_id_FK = u.id 
+         WHERE r.photographer_id_FK = ? 
+         ORDER BY r.created_at DESC`,
+        photographerId
+    ),
+    getRequestsByCustomer: async (customerId) => await getDb().all(
+        `SELECT * FROM ${TABLE_NAME} WHERE customer_id_FK = ? ORDER BY created_at DESC`,
+        customerId
+    ),
+    updateRequestStatus: async (id, status) => {
+        await getDb().run(
+            `UPDATE ${TABLE_NAME} SET status = ? WHERE id = ?`, status, id
+        );
+    },
+    deleteRequest: async (id) => {
+        await getDb().run(`DELETE FROM ${TABLE_NAME} WHERE id = ?`, id);
+    },
+};
+
+const { getDb } = require('./db');
+
+const TABLE_NAME = 'Roles';
+
+module.exports = {
+    TABLE_NAME,
+    addRole: async (name) => {
+        const result = await getDb().run(
+            `INSERT INTO ${TABLE_NAME} (name) VALUES (?)`, name
+        );
+        return { id: result.lastID, name };
+    },
+    getRoles: async () => await getDb().all(`SELECT * FROM ${TABLE_NAME}`),
+    getRoleById: async (id) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE id = ?`, id
+    ),
+    getRoleByName: async (name) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE name = ?`, name
+    ),
+};
+
+const { getDb } = require('./db');
+
+const TABLE_NAME = 'Users';
+
+module.exports = {
+    TABLE_NAME,
+    addUser: async (email, password_hash, roleId, name) => {
+        const result = await getDb().run(
+            `INSERT INTO ${TABLE_NAME} (email, password_hash, role_id_FK, name) 
+             VALUES (?, ?, ?, ?)`,
+            email, password_hash, roleId, name
+        );
+        return { id: result.lastID, email, name };
+    },
+    getUsers: async () => await getDb().all(`SELECT * FROM ${TABLE_NAME}`),
+    getUserByEmail: async (email) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE email = ?`, email
+    ),
+    getUserById: async (id) => await getDb().get(
+        `SELECT * FROM ${TABLE_NAME} WHERE id = ?`, id
+    ),
+    updateUser: async (id, data) => {
+        await getDb().run(
+            `UPDATE ${TABLE_NAME} SET email = ?, name = ?, updated_at = datetime('now') WHERE id = ?`,
+            data.email, data.name, id
+        );
+    },
+    deactivateUser: async (id) => {
+        await getDb().run(
+            `UPDATE ${TABLE_NAME} SET is_active = 0, updated_at = datetime('now') WHERE id = ?`,
+            id
+        );
+    },
+    deleteUser: async (id) => {
+        await getDb().run(`DELETE FROM ${TABLE_NAME} WHERE id = ?`, id);
+    },
+};
+
+
+
+//тут происходит проверка токена
+const jwt = require('jsonwebtoken')
+const JWT_SECRET = process.env.JWT_SECRET || 'lolkek'
+const COOKIE_NAME = 'token'
+
+const authMiddleware = (req, res, next) => {
+    const token = req.cookies[COOKIE_NAME];
+
+    if (!token) {
+        return res.status(401).json({
+            message: 'Пользователь не авторизован'
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.userId = decoded.userId;
+        req.userRole = decoded.role;
+        next();
+    } catch (err) {
+        return res.status(401).json({
+            message: 'Недействительный токен'
+        });
+    }
+};
+
+module.exports = authMiddleware;
+
+
+
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const authRouter = express.Router();
+const { getUserByEmail } = require('../db/users');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'lolkek';
+const COOKIE_NAME = 'token';
+
+authRouter.post('/', async (req, res) => {
+    const user = await getUserByEmail(req.body.email);
+
+    if (!user) {
+        return res.status(404).json({
+            message: 'Такой пользователь не найден'
+        });
+    }
+
+    const isValid = await bcrypt.compare(req.body.password, user.password_hash);
+
+    if (!isValid) {
+        return res.status(400).json({
+            message: 'Пароль неверный'
+        });
+    }
+
+    const token = jwt.sign(
+        { userId: user.id, role: user.role_id_FK },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
+    res.cookie(COOKIE_NAME, token, {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production'
+    });
+
+    res.status(200).json({ ok: true });
+});
+
+authRouter.delete('/', async (req, res) => {
+    res.clearCookie(COOKIE_NAME);
+    res.status(200).json({ ok: true });
+});
+
+module.exports = authRouter;
+
+
+
+const express = require('express');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const photoRouter = express.Router();
+const jwt = require('jsonwebtoken');
+
+const { addPhoto, getPhotosByProject, getPhotoById, deletePhoto } = require('../db/photos');
+const { getProjectById } = require('../db/projects'); // Добавили импорт
+const authMiddleware = require('../middleware/auth');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'my_super_secret_key_123';
+
+// Настройка диска
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const projectId = req.body.project_id;
+        const dir = path.join(__dirname, '../storage/photos/project_' + projectId);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+// Получить фото проекта
+photoRouter.get('/project/:projectId', async (req, res) => {
+    const photos = await getPhotosByProject(req.params.projectId);
+    res.status(200).json(photos);
+});
+
+// ЗАЩИЩЕННАЯ РАЗДАЧА ФАЙЛОВ (вместо express.static в index.js)
+photoRouter.get('/file/:projectId/:filename', async (req, res) => {
+    try {
+        const { projectId, filename } = req.params;
+        const project = await getProjectById(projectId);
+
+        if (!project) return res.status(404).send('Проект не найден');
+
+        // Проверка прав на скачивание
+        let canDownload = false;
+
+        // 1. Если проект публичный - фото видно (но скачивать нельзя, только смотреть)
+        // Но картинка должна загружаться на странице, поэтому мы разрешаем её ОТОБРАЖЕНИЕ всем, 
+        // а кнопку "Скачать" просто скрываем на фронте.
+
+        const filePath = path.join(__dirname, '../storage/photos/project_' + projectId, filename);
+
+        if (fs.existsSync(filePath)) {
+            // Отдаем файл (браузер его покажет)
+            res.sendFile(filePath);
+        } else {
+            res.status(404).send('File not found');
+        }
+    } catch (e) {
+        res.status(500).send('Server error');
+    }
+});
+
+// Загрузить фото
+photoRouter.post('/', authMiddleware, upload.array('photos', 50), async (req, res) => {
+    try {
+        const projectId = req.body.project_id;
+        const uploaded = [];
+        for (const file of req.files) {
+            const relativePath = `/api/photos/file/${projectId}/${file.filename}`;
+            const photo = await addPhoto(projectId, relativePath);
+            uploaded.push(photo);
+        }
+        res.status(200).json(uploaded);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка при загрузке' });
+    }
+});
+
+// Удалить фото
+photoRouter.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+        const photo = await getPhotoById(req.params.id);
+        if (!photo) return res.status(404).json({ message: 'Фото не найдено' });
+
+        const filePath = path.join(__dirname, '..', photo.file_path.replace('/api/photos/file/', '/storage/photos/project_'));
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        await deletePhoto(req.params.id);
+        res.status(200).json({ ok: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Ошибка при удалении' });
+    }
+});
+
+module.exports = photoRouter;
+
+
+const express = require('express');
+const profileRouter = express.Router();
+const {
+    addProfile, getProfileByID,
+    getProfileByUserId, updateProfile,
+    deleteProfile, searchProfiles, getProfiles
+} = require('../db/profiles');
+const authMiddleware = require('../middleware/auth')
+
+//list profile
+profileRouter.get('/', async (req, res) => {
+    const { city, genre, maxPrice } = req.query;
+    const profiles = await searchProfiles(city, genre, maxPrice);
+    res.status(200).json(profiles);
+});
+
+//profile by id
+profileRouter.get('/:id', async (req, res) => {
+    const profile = await getProfileByID(req.params.id);
+
+    if (!profile) {
+        return res.status(404).json({
+            message: 'Профиль не найден'
+        });
+    }
+
+    res.status(200).json(profile);
+});
+
+//create profile
+profileRouter.post('/', authMiddleware, async (req, res) => {
+    const existing = await getProfileByUserId(req.userId);
+
+    if (existing) {
+        return res.status(400).json({
+            message: 'Профиль уже существует'
+        });
+    }
+
+    const profile = await addProfile(
+        req.userId,
+        req.body.city,
+        req.body.genres,
+        req.body.price_hour,
+        req.body.description,
+        req.body.avatar_url
+    );
+
+    res.status(200).json(profile);
+});
+
+//upd profile
+profileRouter.put('/:id', authMiddleware, async (req, res) => {
+    await updateProfile(req.params.id, req.body);
+    res.status(200).json({ ok: true });
+});
+
+//delete profile
+profileRouter.delete('/:id', authMiddleware, async (req, res) => {
+    await deleteProfile(req.params.id);
+    res.status(200).json({ ok: true });
+});
+
+module.exports = profileRouter;
+
+
+const express = require('express');
+const bcrypt = require('bcrypt');
+const projectRouter = express.Router();
+const {
+    addProject,
+    getProjectById,
+    getAllProjectsByProfile,
+    getProjectsByProfile,
+    getPublicProjects,
+    updateProject,
+    deleteProject
+} = require('../db/projects');
+const authMiddleware = require('../middleware/auth');
+
+// Публичные проекты
+projectRouter.get('/', async (req, res) => {
+    const projects = await getPublicProjects();
+    res.status(200).json(projects);
+});
+
+// Все проекты профиля (для владельца)
+projectRouter.get('/profile/:profileId/all', async (req, res) => {
+    const projects = await getAllProjectsByProfile(req.params.profileId);
+    res.status(200).json(projects);
+});
+
+// Проекты фотографа
+projectRouter.get('/profile/:profileId', async (req, res) => {
+    const projects = await getProjectsByProfile(req.params.profileId);
+    res.status(200).json(projects);
+});
+
+// Проект по ID
+projectRouter.get('/:id', async (req, res) => {
+    const project = await getProjectById(req.params.id);
+
+    if (!project) {
+        return res.status(404).json({
+            message: 'Проект не найден'
+        });
+    }
+
+    res.status(200).json(project);
+});
+
+// Создать проект
+projectRouter.post('/', authMiddleware, async (req, res) => {
+    let access_password = null;
+
+    if (req.body.is_private && req.body.access_password) {
+        access_password = await bcrypt.hash(req.body.access_password, 10);
+    }
+
+    const project = await addProject(
+        req.body.profile_id,
+        req.body.title,
+        req.body.description,
+        req.body.genre,
+        req.body.shoot_date,
+        req.body.is_private,
+        access_password,
+        req.body.cover_photo_url
+    );
+
+    res.status(200).json(project);
+});
+
+// Обновить проект
+projectRouter.put('/:id', authMiddleware, async (req, res) => {
+    await updateProject(req.params.id, req.body);
+    res.status(200).json({ ok: true });
+});
+
+// Удалить проект
+projectRouter.delete('/:id', authMiddleware, async (req, res) => {
+    await deleteProject(req.params.id);
+    res.status(200).json({ ok: true });
+});
+
+// Доступ к приватному проекту по паролю
+projectRouter.post('/:id/access', async (req, res) => {
+    const project = await getProjectById(req.params.id);
+
+    if (!project) {
+        return res.status(404).json({
+            message: 'Проект не найден'
+        });
+    }
+
+    if (!project.is_private) {
+        return res.status(200).json({ ok: true });
+    }
+
+    const isValid = await bcrypt.compare(
+        req.body.password,
+        project.access_password
+    );
+
+    if (!isValid) {
+        return res.status(403).json({
+            message: 'Неверный пароль'
+        });
+    }
+
+    res.status(200).json({ ok: true });
+});
+
+module.exports = projectRouter;
+
+
+const express = require('express');
+const requestRouter = express.Router();
+const {
+    addRequest,
+    getRequestsByPhotographer,
+    getRequestsByCustomer,
+    updateRequestStatus,
+    deleteRequest
+} = require('../db/requests');
+const authMiddleware = require('../middleware/auth');
+
+// Входящие заявки фотографа
+requestRouter.get('/photographer/:id', authMiddleware, async (req, res) => {
+    const requests = await getRequestsByPhotographer(req.params.id);
+    res.status(200).json(requests);
+});
+
+// Исходящие заявки заказчика
+requestRouter.get('/customer/:id', authMiddleware, async (req, res) => {
+    const requests = await getRequestsByCustomer(req.params.id);
+    res.status(200).json(requests);
+});
+
+// Отправить заявку
+requestRouter.post('/', authMiddleware, async (req, res) => {
+    const request = await addRequest(
+        req.userId,
+        req.body.photographer_id,
+        req.body.name,
+        req.body.contact,
+        req.body.desired_date,
+        req.body.genre,
+        req.body.comment
+    );
+
+    res.status(200).json(request);
+});
+
+// Обновить статус
+requestRouter.put('/:id', authMiddleware, async (req, res) => {
+    await updateRequestStatus(req.params.id, req.body.status);
+    res.status(200).json({ ok: true });
+});
+
+// Удалить заявку
+requestRouter.delete('/:id', authMiddleware, async (req, res) => {
+    await deleteRequest(req.params.id);
+    res.status(200).json({ ok: true });
+});
+
+module.exports = requestRouter;
+
+
+const express = require('express');
+const bcrypt = require('bcrypt');
+const userRouter = express.Router();
+const { getUserByEmail, addUser, getUserById } = require('../db/users');
+const { getRoleByName } = require('../db/roles');
+const authMiddleware = require('../middleware/auth');
+
+
+//reqistry
+userRouter.post('/', async (req, res) => {
+    const existing = await getUserByEmail(req.body.email);
+
+    if (existing) {
+        return res.status(400).json({
+            message: 'Такой пользователь уже есть'
+        });
+    }
+
+    const role = await getRoleByName(req.body.role || 'customer');
+
+    if (!role) {
+        return res.status(400).json({
+            message: 'Неверная роль'
+        });
+    }
+
+    const password_hash = await bcrypt.hash(req.body.password, 10);
+
+    const newUser = await addUser(
+        req.body.email,
+        password_hash,
+        role.id,
+        req.body.name
+    );
+
+    res.status(200).json(newUser);
+});
+
+//current user
+userRouter.get('/me', authMiddleware, async (req, res) => {
+    const user = await getUserById(req.userId);
+
+    if (!user) {
+        return res.status(404).json({
+            message: 'Пользователь не найден'
+        });
+    }
+
+    res.status(200).json(user);
+});
+
+// Обновление данных пользователя
+userRouter.put('/:id', authMiddleware, async (req, res) => {
+    try {
+        await updateUser(req.params.id, { name: req.body.name, email: req.body.email });
+        res.status(200).json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ message: 'Ошибка обновления' });
+    }
+});
+
+module.exports = userRouter;
+
+
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+const { initDb } = require('./db/db');
+
+const app = express();
+const port = process.env.PORT || 3001;
+
+//CORS — ПЕРВЫМ
+app.use(cors({
+    credentials: true,
+    origin: true
+}));
+
+//Парсеры
+app.use(express.json());
+app.use(cookieParser());
+
+app.use('/storage', express.static(path.join(__dirname, 'storage')));
+
+//Роуты
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/profiles', require('./routes/profiles'));
+app.use('/api/projects', require('./routes/projects'));
+app.use('/api/photos', require('./routes/photos'));
+app.use('/api/requests', require('./routes/requests'));
+
+//404 — если роут не найден
+app.use((req, res) => {
+    res.status(404).json({ message: 'Эндпоинт не найден' });
+});
+
+//500 — глобальный обработчик ошибок
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Ошибка сервера' });
+});
+
+//Запуск сервера
+(async () => {
+    await initDb();
+    app.listen(port, () => {
+        console.log(`Сервер запущен на порту ${port}`);
+    });
+})();
+
+
+Клиентская часть:
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: '/', name: 'home', component: () => import('@/views/HomeView.vue') },
+    { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue') },
+    { path: '/register', name: 'register', component: () => import('@/views/RegisterView.vue') },
+    { path: '/dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
+    { path: '/profile/:id', name: 'profile', component: () => import('@/views/ProfileView.vue') },
+    { path: '/project/:id', name: 'project', component: () => import('@/views/ProjectView.vue') },
+    // НОВЫЕ РОУТЫ:
+    { path: '/create-project', name: 'create-project', component: () => import('@/views/CreateProjectView.vue'), meta: { requiresAuth: true } },
+    { path: '/edit-profile', name: 'edit-profile', component: () => import('@/views/EditProfileView.vue'), meta: { requiresAuth: true } }
+  ]
+});
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore();
+  if (auth.user === null) {
+    await auth.fetchCurrentUser();
+  }
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' };
+  }
+});
+
+export default router;
+
+
+import type { LoginData, RegistrationData, ProfileData, ProjectData, RequestData } from './types';
+
+
+// ============ БАЗОВЫЙ URL ============
+
+export const BASE_URL = '/api';
+
+// ============ ОБРАБОТКА ОШИБОК ============
+
+const errorHandler = async (response: Response) => {
+    if (!response.ok) {
+        const responseData = await response.json().catch(() => ({
+            message: 'Ошибка сервера'
+        }));
+        throw Error(responseData.message || 'Ошибка сервера');
+    }
+};
+
+// Проверка, есть ли у пользователя кука с токеном
+export const hasAuthToken = (): boolean => {
+    return document.cookie.split(';').some((item) => item.trim().startsWith('token='));
+};
+
+// ============ API ============
+
+export const API = {
+    // ---------- Авторизация ----------
+    auth: {
+        login: async (data: LoginData) => {
+            const response = await fetch(`${BASE_URL}/auth`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+        },
+        logout: async () => {
+            const response = await fetch(`${BASE_URL}/auth`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            await errorHandler(response);
+        }
+    },
+
+    // ---------- Пользователи ----------
+    users: {
+        register: async (data: RegistrationData) => {
+            const response = await fetch(`${BASE_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+            return await response.json();
+        },
+        getCurrentUser: async () => {
+            const response = await fetch(`${BASE_URL}/users/me`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            await errorHandler(response);
+            return await response.json();
+        },
+        update: async (id: number, data: { name: string }) => {
+            const response = await fetch(`${BASE_URL}/users/${id}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+        }
+    },
+
+    // ---------- Профили фотографов ----------
+    profiles: {
+
+        getAll: async () => {
+            const response = await fetch(`${BASE_URL}/profiles`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        search: async (city?: string, genre?: string, maxPrice?: number) => {
+            const params = new URLSearchParams();
+            if (city) params.append('city', city);
+            if (genre) params.append('genre', genre);
+            if (maxPrice) params.append('maxPrice', maxPrice.toString());
+
+            const response = await fetch(`${BASE_URL}/profiles/search?${params}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        getById: async (id: number) => {
+            const response = await fetch(`${BASE_URL}/profiles/${id}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        create: async (data: ProfileData) => {
+            const response = await fetch(`${BASE_URL}/profiles`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+            return await response.json();
+        },
+        update: async (id: number, data: ProfileData) => {
+            const response = await fetch(`${BASE_URL}/profiles/${id}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+        },
+        delete: async (id: number) => {
+            const response = await fetch(`${BASE_URL}/profiles/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            await errorHandler(response);
+        }
+    },
+
+    // ---------- Проекты ----------
+    projects: {
+        // ДОБАВЬ ВОТ ЭТОТ БЛОК:
+        getAllByProfile: async (profileId: number) => {
+            const response = await fetch(`${BASE_URL}/projects/profile/${profileId}/all`);
+            await errorHandler(response);
+            return await response.json();
+        },
+
+        // ... остальные методы (getById, create и т.д.)
+        getPublic: async () => {
+            const response = await fetch(`${BASE_URL}/projects`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        getByProfile: async (profileId: number) => {
+            const response = await fetch(`${BASE_URL}/projects/profile/${profileId}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        getById: async (id: number) => {
+            const response = await fetch(`${BASE_URL}/projects/${id}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        create: async (data: ProjectData) => {
+            const response = await fetch(`${BASE_URL}/projects`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+            return await response.json();
+        },
+        update: async (id: number, data: Partial<ProjectData>) => {
+            const response = await fetch(`${BASE_URL}/projects/${id}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+        },
+        delete: async (id: number) => {
+            const response = await fetch(`${BASE_URL}/projects/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            await errorHandler(response);
+        },
+        accessPrivate: async (id: number, password: string) => {
+            const response = await fetch(`${BASE_URL}/projects/${id}/access`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+            await errorHandler(response);
+        }
+    },
+
+    // ---------- Фотографии ----------
+    photos: {
+        getByProject: async (projectId: number) => {
+            const response = await fetch(`${BASE_URL}/photos/project/${projectId}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        upload: async (projectId: number, files: FileList) => {
+            const formData = new FormData();
+            formData.append('project_id', projectId.toString());
+
+            for (const file of files) {
+                formData.append('photos', file);
+            }
+
+            const response = await fetch(`${BASE_URL}/photos`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            await errorHandler(response);
+            return await response.json();
+        },
+        delete: async (id: number) => {
+            const response = await fetch(`${BASE_URL}/photos/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            await errorHandler(response);
+        }
+    },
+
+    // ---------- Заявки ----------
+    requests: {
+        getByPhotographer: async (photographerId: number) => {
+            const response = await fetch(`${BASE_URL}/requests/photographer/${photographerId}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        getByCustomer: async (customerId: number) => {
+            const response = await fetch(`${BASE_URL}/requests/customer/${customerId}`);
+            await errorHandler(response);
+            return await response.json();
+        },
+        create: async (data: RequestData) => {
+            const response = await fetch(`${BASE_URL}/requests`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            await errorHandler(response);
+            return await response.json();
+        },
+        updateStatus: async (id: number, status: string) => {
+            const response = await fetch(`${BASE_URL}/requests/${id}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            await errorHandler(response);
+        },
+        delete: async (id: number) => {
+            const response = await fetch(`${BASE_URL}/requests/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            await errorHandler(response);
+        }
+    }
+};
+
+
+
+export type LoginData = {
+    email: string;
+    password: string;
+};
+
+export type RegistrationData = {
+    email: string;
+    password: string;
+    name: string;
+    role: 'photographer' | 'customer';
+};
+
+export type ProfileData = {
+    city?: string;
+    genres?: string;
+    price_hour?: number;
+    description?: string;
+    avatar_url?: string;
+};
+
+export type ProjectData = {
+    profile_id: number;
+    title: string;
+    description?: string;
+    genre?: string;
+    shoot_date?: string;
+    is_private?: boolean;
+    access_password?: string;
+    cover_photo_url?: string;
+};
+
+export type RequestData = {
+    photographer_id: number;
+    name: string;
+    contact: string;
+    desired_date?: string;
+    genre?: string;
+    comment?: string;
+};
+
+export interface User {
+    id: number;
+    email: string;
+    name: string;
+    role_id_FK: number;
+    is_active?: number;
+    created_at?: string;
+}
+
+
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import { API } from '@/services/api';
+
+interface User {
+    id: number;
+    email: string;
+    name: string;
+    role_id_FK: number;
+}
+
+export const useAuthStore = defineStore('auth', () => {
+    const user = ref<User | null>(null);
+    const loading = ref(false);
+    const error = ref('');
+
+    const isAuthenticated = computed(() => !!user.value);
+    const isPhotographer = computed(() => user.value?.role_id_FK === 1);
+    const isCustomer = computed(() => user.value?.role_id_FK === 2);
+
+    async function login(email: string, password: string) {
+        loading.value = true;
+        error.value = '';
+        try {
+            await API.auth.login({ email, password });
+            await fetchCurrentUser();
+        } catch (e) {
+            error.value = (e as Error).message;
+            throw e;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function register(data: {
+        email: string;
+        password: string;
+        name: string;
+        role: 'photographer' | 'customer';
+    }) {
+        loading.value = true;
+        error.value = '';
+        try {
+            await API.users.register(data);
+            await login(data.email, data.password);
+        } catch (e) {
+            error.value = (e as Error).message;
+            throw e;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function fetchCurrentUser() {
+        try {
+            user.value = await API.users.getCurrentUser();
+        } catch {
+            user.value = null;
+        }
+    }
+
+    async function logout() {
+        await API.auth.logout();
+        user.value = null;
+    }
+
+    return {
+        user,
+        loading,
+        error,
+        isAuthenticated,
+        isPhotographer,
+        isCustomer,
+        login,
+        register,
+        fetchCurrentUser,
+        logout
+    };
+});
+
+
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
+
+export const useCounterStore = defineStore('counter', () => {
+  const count = ref(0)
+  const doubleCount = computed(() => count.value * 2)
+  function increment() {
+    count.value++
+  }
+
+  return { count, doubleCount, increment }
+})
+
+
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { API } from '@/services/api';
+
+const router = useRouter();
+const title = ref('');
+const description = ref('');
+const genre = ref('');
+const shootDate = ref('');
+const isPrivate = ref(false);
+const accessPassword = ref('');
+const selectedFiles = ref<FileList | null>(null);
+const loading = ref(false);
+const error = ref('');
+
+function handleFileChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files) selectedFiles.value = target.files;
+}
+
+async function handleCreate() {
+    loading.value = true;
+    error.value = '';
+    try {
+        const newProject = await API.projects.create({
+            profile_id: 1, 
+            title: title.value,
+            description: description.value,
+            genre: genre.value,
+            shoot_date: shootDate.value,
+            is_private: isPrivate.value,
+            access_password: isPrivate.value ? accessPassword.value : undefined
+        });
+        if (selectedFiles.value && selectedFiles.value.length > 0) {
+            await API.photos.upload(newProject.id, selectedFiles.value);
+        }
+        router.push('/dashboard');
+    } catch (e) {
+        error.value = (e as Error).message;
+    } finally {
+        loading.value = false;
+    }
+}
+</script>
+
+<template>
+    <div class="page-wrapper">
+        <div class="form-card">
+            <h1 class="form-title">Новая фотосессия</h1>
+            <div v-if="error" class="error">{{ error }}</div>
+            
+            <form @submit.prevent="handleCreate" class="form-layout">
+                <div class="form-group">
+                    <label>Название проекта</label>
+                    <input v-model="title" type="text" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea v-model="description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Жанр</label>
+                    <input v-model="genre" type="text" class="form-control" placeholder="Свадьба, Портрет" />
+                </div>
+                <div class="form-group">
+                    <label>Дата съемки</label>
+                    <input v-model="shootDate" type="date" class="form-control" />
+                </div>
+                
+                <label class="checkbox-row">
+                    <input type="checkbox" v-model="isPrivate" /> Приватный проект (по паролю)
+                </label>
+
+                <div v-if="isPrivate" class="form-group">
+                    <label>Пароль для доступа</label>
+                    <input v-model="accessPassword" type="text" class="form-control" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Фотографии (до 50 шт)</label>
+                    <input type="file" multiple accept="image/*" @change="handleFileChange" class="form-control" style="padding: 8px;" />
+                </div>
+
+                <button type="submit" class="btn-submit" :disabled="loading">
+                    {{ loading ? 'Создание...' : 'Создать проект' }}
+                </button>
+            </form>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.page-wrapper { background: #FAFAFA; min-height: 100vh; padding: 60px 20px; display: flex; justify-content: center; font-family: 'Inter', sans-serif; }
+.form-card { background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; padding: 40px; width: 100%; max-width: 600px; }
+.form-title { font-size: 28px; font-weight: 800; text-align: center; margin: 0 0 32px; color: #0d0d0d; }
+.form-layout { display: flex; flex-direction: column; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label { font-size: 14px; font-weight: 600; color: #0d0d0d; }
+.form-control { padding: 12px 14px; border: 1px solid #E5E5E5; border-radius: 4px; font-size: 15px; background: #F5F5F5; font-family: inherit; }
+.form-control:focus { outline: none; border-color: #800020; background: #fff; }
+.checkbox-row { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; }
+.btn-submit { width: 100%; padding: 14px; background: #800020; color: #fff; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+.btn-submit:hover { background: #66001a; }
+.error { color: #C1121F; text-align: center; margin-bottom: 16px; }
+</style>
+
+
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { API } from '@/services/api';
+
+const auth = useAuthStore();
+const router = useRouter();
+const name = ref(auth.user?.name || '');
+const isEditing = ref(false);
+const requests = ref<any[]>([]);
+const loading = ref(false);
+
+async function handleLogout() {
+    await auth.logout();
+    router.push('/login');
+}
+
+async function saveName() {
+    if (!auth.user) return;
+    loading.value = true;
+    try {
+        await API.users.update(auth.user.id, { name: name.value });
+        auth.user.name = name.value;
+        isEditing.value = false;
+    } catch (e) { alert('Ошибка'); } finally { loading.value = false; }
+}
+
+onMounted(async () => {
+    if (auth.isCustomer && auth.user) {
+        try { requests.value = await API.requests.getByCustomer(auth.user.id); } catch (e) {}
+    }
+});
+</script>
+
+<template>
+    <div class="page-wrapper">
+        <div class="container">
+            <header class="dash-header">
+                <h1 class="dash-title">Личный кабинет</h1>
+                <button @click="handleLogout" class="btn-logout">Выйти</button>
+            </header>
+
+            <div class="dash-grid">
+                <!-- Профиль -->
+                <div class="dash-card">
+                    <div class="avatar"></div>
+                    <div v-if="!isEditing" class="user-info">
+                        <h2 class="user-name">{{ auth.user?.name }}</h2>
+                        <p class="user-email">{{ auth.user?.email }}</p>
+                        <span class="role-badge">Заказчик</span>
+                        <button @click="isEditing = true" class="edit-link">Изменить имя</button>
+                    </div>
+                    <div v-else class="edit-form">
+                        <input v-model="name" type="text" class="form-control" />
+                        <div class="edit-actions">
+                            <button @click="isEditing = false" class="btn-outline">Отмена</button>
+                            <button @click="saveName" class="btn-primary" :disabled="loading">Сохранить</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Заявки -->
+                <div class="dash-card">
+                    <h3 class="card-title">Мои заявки</h3>
+                    <div v-if="requests.length === 0" class="empty">Вы пока не отправляли заявок.</div>
+                    <ul v-else class="requests-list">
+                        <li v-for="req in requests" :key="req.id" class="request-item">
+                            <div>
+                                <h4 class="req-name">Фотограф: {{ req.photographer_name }}</h4>
+                                <p class="req-meta">{{ req.desired_date }} • {{ req.genre }}</p>
+                            </div>
+                            <span class="req-status" :class="req.status">
+                                {{ req.status === 'new' ? 'Ожидает' : req.status }}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.page-wrapper { background: #FAFAFA; min-height: 100vh; padding: 60px 20px; font-family: 'Inter', sans-serif; }
+.container { max-width: 1000px; margin: 0 auto; }
+.dash-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E5E5; padding-bottom: 24px; margin-bottom: 40px; }
+.dash-title { font-size: 28px; font-weight: 800; margin: 0; }
+.btn-logout { background: none; border: none; color: #C1121F; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 768px) { .dash-grid { grid-template-columns: 1fr; } }
+
+.dash-card { background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; padding: 32px; }
+.avatar { width: 80px; height: 80px; border-radius: 50%; background: #F0F0F0; margin: 0 auto 16px; }
+.user-info { text-align: center; }
+.user-name { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+.user-email { color: #5A5A5A; margin: 0 0 12px; font-size: 15px; }
+.role-badge { background: #F5F5F5; color: #800020; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; }
+.edit-link { display: block; margin: 16px auto 0; background: none; border: none; color: #800020; text-decoration: underline; cursor: pointer; font-size: 14px; }
+
+.edit-form { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.form-control { padding: 10px; border: 1px solid #E5E5E5; border-radius: 4px; }
+.edit-actions { display: flex; gap: 8px; }
+.btn-primary { flex: 1; padding: 10px; background: #800020; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+.btn-outline { flex: 1; padding: 10px; background: #fff; color: #800020; border: 1px solid #800020; border-radius: 4px; cursor: pointer; }
+
+.card-title { font-size: 20px; font-weight: 700; margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid #E5E5E5; }
+.empty { color: #666; font-size: 15px; }
+.requests-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.request-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #E5E5E5; border-radius: 4px; }
+.req-name { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+.req-meta { font-size: 14px; color: #5A5A5A; margin: 0; }
+.req-status { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+.req-status.new { background: #FFF0B8; color: #6B5200; }
+</style>
+
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { API } from '@/services/api';
+import { useAuthStore } from '@/stores/auth';
+
+const router = useRouter();
+const auth = useAuthStore();
+const city = ref('');
+const genres = ref('');
+const priceHour = ref<number | null>(null);
+const description = ref('');
+const loading = ref(true);
+const error = ref('');
+
+onMounted(async () => {
+    try {
+        const allProfiles = await API.profiles.getAll();
+        const myProfile = allProfiles.find((p: any) => p.user_id_FK === auth.user?.id);
+        if (myProfile) {
+            city.value = myProfile.city || '';
+            genres.value = myProfile.genres || '';
+            priceHour.value = myProfile.price_hour;
+            description.value = myProfile.description || '';
+        }
+    } finally { loading.value = false; }
+});
+
+async function handleSave() {
+    loading.value = true;
+    error.value = '';
+    try {
+        await API.profiles.create({
+            city: city.value,
+            genres: genres.value,
+            price_hour: priceHour.value || 0,
+            description: description.value
+        });
+        router.push('/dashboard');
+    } catch (e) {
+        error.value = (e as Error).message;
+    } finally { loading.value = false; }
+}
+</script>
+
+<template>
+    <div class="page-wrapper">
+        <div class="form-card">
+            <h1 class="form-title">Настройка профиля</h1>
+            <div v-if="error" class="error">{{ error }}</div>
+
+            <form @submit.prevent="handleSave" class="form-layout">
+                <div class="form-group">
+                    <label>Город</label>
+                    <input v-model="city" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Жанры (через запятую)</label>
+                    <input v-model="genres" type="text" class="form-control" placeholder="Свадьба, Портрет" />
+                </div>
+                <div class="form-group">
+                    <label>Цена за час (₽)</label>
+                    <input v-model="priceHour" type="number" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>О себе</label>
+                    <textarea v-model="description" class="form-control" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn-submit" :disabled="loading">
+                    {{ loading ? 'Сохранение...' : 'Сохранить профиль' }}
+                </button>
+            </form>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+/* Тот же CSS, что и в CreateProjectView */
+.page-wrapper { background: #FAFAFA; min-height: 100vh; padding: 60px 20px; display: flex; justify-content: center; font-family: 'Inter', sans-serif; }
+.form-card { background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; padding: 40px; width: 100%; max-width: 600px; }
+.form-title { font-size: 28px; font-weight: 800; text-align: center; margin: 0 0 32px; color: #0d0d0d; }
+.form-layout { display: flex; flex-direction: column; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label { font-size: 14px; font-weight: 600; color: #0d0d0d; }
+.form-control { padding: 12px 14px; border: 1px solid #E5E5E5; border-radius: 4px; font-size: 15px; background: #F5F5F5; font-family: inherit; }
+.form-control:focus { outline: none; border-color: #800020; background: #fff; }
+.btn-submit { width: 100%; padding: 14px; background: #800020; color: #fff; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+.btn-submit:hover { background: #66001a; }
+.error { color: #C1121F; text-align: center; margin-bottom: 16px; }
+</style>
+
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { API } from '@/services/api';
+
+interface Profile {
+    id: number;
+    user_id_FK: number;
+    city: string;
+    genres: string;
+    price_hour: number;
+    photographer_name: string;
+}
+
+const profiles = ref<Profile[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+    try {
+        profiles.value = await API.profiles.getAll();
+    } finally {
+        loading.value = false;
+    }
+});
+</script>
+
+<template>
+    <div class="page-wrapper">
+        <!-- Hero секция -->
+        <section class="hero">
+            <h1 class="hero-title">Найдите своего фотографа</h1>
+            <p class="hero-subtitle">Лучшие специалисты для ваших важных моментов</p>
+        </section>
+
+        <!-- Каталог -->
+        <section class="catalog">
+            <div class="container">
+                <h2 class="section-title">Каталог фотографов</h2>
+                
+                <div v-if="loading" class="status">Загрузка...</div>
+                
+                <div v-else class="grid">
+                    <RouterLink 
+                        v-for="p in profiles" 
+                        :key="p.id" 
+                        :to="`/profile/${p.user_id_FK}`" 
+                        class="card"
+                    >
+                        <div class="card-img-placeholder"></div>
+                        <div class="card-info">
+                            <div class="card-header">
+                                <h3 class="card-name">{{ p.photographer_name }}</h3>
+                                <span class="card-price">{{ p.price_hour ? p.price_hour + ' ₽' : 'По запросу' }}</span>
+                            </div>
+                            <p class="card-city">{{ p.city || 'Город не указан' }}</p>
+                            <p class="card-genres">{{ p.genres || 'Разные жанры' }}</p>
+                        </div>
+                    </RouterLink>
+                </div>
+            </div>
+        </section>
+    </div>
+</template>
+
+<style scoped>
+.page-wrapper {
+    background-color: #FAFAFA;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: #0d0d0d;
+}
+
+/* Hero */
+.hero {
+    text-align: center;
+    padding: 80px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.hero-title {
+    font-size: 48px;
+    font-weight: 800;
+    margin: 0 0 16px;
+    letter-spacing: -0.03em;
+}
+.hero-subtitle {
+    font-size: 18px;
+    color: #5f5f5f;
+    margin: 0;
+}
+
+/* Container */
+.container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 20px 100px;
+}
+
+.section-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    border-bottom: 1px solid #E5E5E5;
+    padding-bottom: 16px;
+}
+
+/* Grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+/* Card */
+.card {
+    background: #FFFFFF;
+    border: 1px solid #E5E5E5;
+    border-radius: 4px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.3s, border-color 0.3s;
+}
+.card:hover {
+    border-color: #d8d8d8;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.07);
+}
+
+.card-img-placeholder {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #F0F0F0;
+    border-radius: 4px 4px 0 0;
+}
+
+.card-info {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.card-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+.card-price {
+    font-size: 16px;
+    font-weight: 600;
+    color: #800020;
+    white-space: nowrap;
+}
+.card-city, .card-genres {
+    font-size: 14px;
+    color: #5A5A5A;
+    margin: 0;
+}
+
+.status {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+}
+</style>
+
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+const router = useRouter();
+const auth = useAuthStore();
+
+const email = ref('');
+const password = ref('');
+
+async function handleLogin() {
+    try {
+        await auth.login(email.value, password.value);
+        router.push('/dashboard');
+    } catch (e) {
+        // Ошибка в auth.error
+    }
+}
+</script>
+
+<template>
+    <div class="page-container">
+        <div class="auth-card">
+            <h1>Вход в систему</h1>
+            
+            <div v-if="auth.error" class="error-message">{{ auth.error }}</div>
+
+            <form @submit.prevent="handleLogin">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input v-model="email" type="email" class="form-control" placeholder="Введите ваш email" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input v-model="password" type="password" class="form-control" placeholder="Введите пароль" required />
+                </div>
+
+                <button type="submit" class="btn" :disabled="auth.loading">
+                    {{ auth.loading ? 'Вход...' : 'Войти' }}
+                </button>
+            </form>
+
+            <div class="auth-links">
+                Нет аккаунта? <RouterLink to="/register">Зарегистрироваться</RouterLink>
+            </div>
+        </div>
+    </div>
+</template>
+
+
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { API } from '@/services/api';
+import { useAuthStore } from '@/stores/auth';
+
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
+const userId = Number(route.params.id); 
+
+const profile = ref<any>(null);
+const projects = ref<any[]>([]);
+const loading = ref(true);
+const error = ref('');
+
+// Модалка заявок
+const requests = ref<any[]>([]);
+const showRequestsModal = ref(false);
+
+// Фильтры
+const filterDate = ref('');
+const filterGenre = ref('');
+
+const isOwner = computed(() => {
+    return auth.user && auth.user.id === profile.value?.user_id_FK;
+});
+
+const filteredProjects = computed(() => {
+    let result = projects.value;
+    if (filterDate.value) {
+        result = result.filter(p => p.shoot_date && p.shoot_date.includes(filterDate.value));
+    }
+    if (filterGenre.value) {
+        result = result.filter(p => p.genre && p.genre.toLowerCase().includes(filterGenre.value.toLowerCase()));
+    }
+    return result;
+});
+
+onMounted(async () => {
+    try {
+        const allProfiles = await API.profiles.getAll();
+        const foundProfile = allProfiles.find((p: any) => p.user_id_FK === userId);
+        if (!foundProfile) throw new Error('Профиль не найден');
+        profile.value = foundProfile;
+
+        if (isOwner.value) {
+            projects.value = await API.projects.getAllByProfile(foundProfile.id);
+        } else {
+            projects.value = await API.projects.getByProfile(foundProfile.id);
+            projects.value = projects.value.filter((p: any) => p.is_private === 0);
+        }
+    } catch (e) {
+        error.value = (e as Error).message;
+    } finally {
+        loading.value = false;
+    }
+});
+
+function goToRequest() {
+    if (!auth.isAuthenticated) {
+        router.push('/login');
+    } else {
+        router.push(`/request/${profile.value.user_id_FK}`);
+    }
+}
+
+async function loadRequests() {
+    if (!profile.value) return;
+    try {
+        requests.value = await API.requests.getByPhotographer(profile.value.id);
+        showRequestsModal.value = true;
+    } catch (e) {
+        alert('Не удалось загрузить заявки');
+    }
+}
+</script>
+
+<template>
+    <div v-if="loading" class="status">Загрузка профиля...</div>
+    <div v-else-if="error" class="status error">{{ error }}</div>
+    
+    <div v-else-if="profile" class="page-wrapper">
+        <div class="container">
+            
+            <!-- Верх профиля -->
+            <header class="profile-header">
+                <div class="profile-avatar"></div>
+                <div class="profile-info">
+                    <h1 class="profile-name">{{ profile.photographer_name }}</h1>
+                    <p class="profile-city">{{ profile.city || 'Город не указан' }}</p>
+                </div>
+            </header>
+
+            <div class="profile-layout">
+                <!-- Сайдбар -->
+                <aside class="sidebar">
+                    <h2 class="sidebar-title">О фотографе</h2>
+                    <p class="sidebar-desc">{{ profile.description || 'Описание пока не добавлено.' }}</p>
+                    
+                    <p class="sidebar-label">Жанры</p>
+                    <p class="sidebar-text">{{ profile.genres || 'Разные жанры' }}</p>
+
+                    <div class="price-box">
+                        <span class="price-label">Стоимость съёмки</span>
+                        <span class="price-value">{{ profile.price_hour ? profile.price_hour + ' ₽/час' : 'По запросу' }}</span>
+                    </div>
+
+                    <!-- Кнопки для заказчика -->
+                    <button v-if="!isOwner" @click="goToRequest" class="btn-primary">Оставить заявку</button>
+                    
+                    <!-- Кнопки для владельца -->
+                    <div v-else class="owner-actions">
+                        <button @click="router.push('/create-project')" class="btn-outline">Создать проект</button>
+                        <button @click="router.push('/edit-profile')" class="btn-outline">Редактировать профиль</button>
+                        <button @click="loadRequests" class="btn-outline">Входящие заявки</button>
+                    </div>
+                </aside>
+
+                <!-- Портфолио -->
+                <main class="portfolio">
+                    <div class="portfolio-header">
+                        <h2 class="portfolio-title">Портфолио</h2>
+                        
+                        <div class="filters">
+                            <input type="date" v-model="filterDate" class="filter-input" placeholder="Дата" />
+                            <input type="text" v-model="filterGenre" class="filter-input" placeholder="Жанр" />
+                        </div>
+                    </div>
+
+                    <div v-if="filteredProjects.length === 0" class="empty-state">
+                        Нет проектов.
+                    </div>
+
+                    <div v-else class="projects-grid">
+                        <RouterLink 
+                            v-for="p in filteredProjects" 
+                            :key="p.id" 
+                            :to="`/project/${p.id}`" 
+                            class="project-card"
+                        >
+                            <div class="project-img">
+                                <span v-if="isOwner" class="badge" :class="p.is_private ? 'private' : 'public'">
+                                    {{ p.is_private ? 'Приватный' : 'Публичный' }}
+                                </span>
+                            </div>
+                            <h3 class="project-name">{{ p.title }}</h3>
+                        </RouterLink>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Модалка заявок -->
+        <div v-if="showRequestsModal" class="modal-overlay" @click.self="showRequestsModal = false">
+            <div class="modal-content">
+                <h3>Входящие заявки</h3>
+                <div v-if="requests.length === 0" style="color: #666; margin-bottom: 20px;">Нет заявок.</div>
+                <div v-else class="requests-list">
+                    <div v-for="req in requests" :key="req.id" class="request-item">
+                        <p><strong>От:</strong> {{ req.name }} ({{ req.contact }})</p>
+                        <p><strong>Дата:</strong> {{ req.desired_date }} | <strong>Жанр:</strong> {{ req.genre }}</p>
+                        <p style="color:#666; font-style: italic;">{{ req.comment }}</p>
+                    </div>
+                </div>
+                <button @click="showRequestsModal = false" class="btn-outline" style="width:100%;">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.page-wrapper { background: #FAFAFA; min-height: 100vh; font-family: 'Inter', sans-serif; color: #0d0d0d; padding: 60px 0; }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.profile-header { display: flex; align-items: center; gap: 24px; border-bottom: 1px solid #E5E5E5; padding-bottom: 32px; margin-bottom: 40px; }
+.profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #F0F0F0; flex-shrink: 0; }
+.profile-name { font-size: 32px; font-weight: 800; margin: 0 0 8px; }
+.profile-city { font-size: 16px; color: #5A5A5A; margin: 0; }
+
+/* Layout */
+.profile-layout { display: grid; grid-template-columns: 320px 1fr; gap: 64px; align-items: start; }
+@media (max-width: 960px) { .profile-layout { grid-template-columns: 1fr; } }
+
+/* Sidebar */
+.sidebar-title { font-size: 20px; color: #800020; font-weight: 700; margin: 0 0 16px; }
+.sidebar-desc { font-size: 16px; line-height: 1.6; color: #5A5A5A; margin-bottom: 24px; }
+.sidebar-label { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #0d0d0d; margin: 0 0 8px; }
+.sidebar-text { font-size: 15px; color: #5A5A5A; margin: 0 0 24px; }
+
+.price-box { border: 1px solid #E5E5E5; background: #fff; border-radius: 4px; padding: 20px; margin-bottom: 24px; }
+.price-label { display: block; font-size: 14px; color: #5A5A5A; margin-bottom: 6px; }
+.price-value { font-size: 24px; font-weight: 800; color: #800020; }
+
+/* Buttons */
+.btn-primary { display: block; width: 100%; padding: 14px; background: #800020; color: #fff; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; text-align: center; cursor: pointer; transition: 0.2s; }
+.btn-primary:hover { background: #66001a; }
+
+.owner-actions { display: flex; flex-direction: column; gap: 12px; }
+.btn-outline { display: block; width: 100%; padding: 12px; background: transparent; color: #800020; border: 1px solid #800020; border-radius: 4px; font-size: 15px; font-weight: 600; text-align: center; cursor: pointer; transition: 0.2s; }
+.btn-outline:hover { background: #800020; color: #fff; }
+
+/* Portfolio */
+.portfolio-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E5E5; padding-bottom: 16px; margin-bottom: 24px; }
+.portfolio-title { font-size: 24px; font-weight: 800; margin: 0; }
+.filters { display: flex; gap: 12px; }
+.filter-input { padding: 10px 14px; border: 1px solid #CFCFCF; border-radius: 4px; font-size: 14px; outline: none; background: #fff; }
+.filter-input:focus { border-color: #800020; }
+
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
+.project-card { text-decoration: none; color: inherit; display: block; }
+.project-img { width: 100%; aspect-ratio: 4/3; background: #F0F0F0; border-radius: 4px; margin-bottom: 12px; position: relative; border: 1px solid #E5E5E5; }
+.project-name { font-size: 15px; font-weight: 600; margin: 0; }
+
+.badge { position: absolute; top: 8px; right: 8px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.badge.private { background: #800020; color: #fff; }
+.badge.public { background: #E0F2FE; color: #0284C7; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: #fff; padding: 32px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.modal-content h3 { margin-top: 0; font-size: 20px; }
+.requests-list { max-height: 300px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+.request-item { padding: 16px; border: 1px solid #E5E5E5; border-radius: 4px; background: #FAFAFA; }
+.request-item p { margin: 0 0 8px; font-size: 14px; }
+
+.status { text-align: center; padding: 100px; font-size: 18px; color: #5A5A5A; }
+.status.error { color: #C1121F; }
+.empty-state { padding: 40px; text-align: center; background: #fff; border: 1px dashed #E5E5E5; border-radius: 4px; color: #666; }
+</style>
+
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { API } from '@/services/api';
+import { useAuthStore } from '@/stores/auth';
+
+const route = useRoute();
+const auth = useAuthStore();
+const projectId = Number(route.params.id);
+
+const project = ref<any>(null);
+const photos = ref<any[]>([]);
+const loading = ref(true);
+const error = ref('');
+
+const password = ref('');
+const isUnlocked = ref(false);
+
+// Редактирование
+const isEditing = ref(false);
+const editForm = ref({ title: '', description: '', genre: '', shoot_date: '', is_private: false, access_password: '' });
+
+// Выделение фото
+const selectedPhotoIds = ref<number[]>([]);
+const showDeleteModal = ref(false);
+
+// Просмотр фото (Lightbox)
+const activePhotoIndex = ref<number | null>(null);
+const activePhoto = computed(() => activePhotoIndex.value !== null ? photos.value[activePhotoIndex.value] : null);
+
+const isOwner = computed(() => {
+    if (!auth.user || !project.value) return false;
+    return auth.user.id === project.value.user_id_FK;
+});
+
+const canDownload = computed(() => {
+    if (!project.value) return false;
+    if (isOwner.value) return true;
+    if (project.value.is_private === 1 && isUnlocked.value) return true;
+    return false;
+});
+
+async function loadProject() {
+    loading.value = true;
+    try {
+        project.value = await API.projects.getById(projectId);
+        editForm.value = {
+            title: project.value.title,
+            description: project.value.description || '',
+            genre: project.value.genre || '',
+            shoot_date: project.value.shoot_date ? project.value.shoot_date.split('T')[0] : '',
+            is_private: project.value.is_private === 1,
+            access_password: project.value.access_password || ''
+        };
+        if (!project.value.is_private || isUnlocked.value || isOwner.value) {
+            photos.value = await API.photos.getByProject(projectId);
+        }
+    } catch (e) {
+        error.value = 'Проект не найден';
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function handleUnlock() {
+    try {
+        await API.projects.accessPrivate(projectId, password.value);
+        isUnlocked.value = true;
+        await loadProject();
+    } catch (e) { alert('Неверный пароль'); }
+}
+
+async function saveProject() {
+    try {
+        await API.projects.update(projectId, {
+            ...editForm.value,
+            access_password: editForm.value.is_private ? editForm.value.access_password : undefined
+        });
+        isEditing.value = false;
+        await loadProject();
+    } catch (e) { alert('Ошибка сохранения'); }
+}
+
+async function handleUpload(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
+    try {
+        loading.value = true;
+        await API.photos.upload(projectId, target.files);
+        await loadProject();
+    } catch (e) { alert('Ошибка загрузки'); } finally { loading.value = false; target.value = ''; }
+}
+
+function togglePhotoSelection(id: number) {
+    if (selectedPhotoIds.value.includes(id)) {
+        selectedPhotoIds.value = selectedPhotoIds.value.filter(pid => pid !== id);
+    } else {
+        selectedPhotoIds.value.push(id);
+    }
+}
+
+async function confirmDelete() {
+    try {
+        for (const id of selectedPhotoIds.value) await API.photos.delete(id);
+        selectedPhotoIds.value = [];
+        showDeleteModal.value = false;
+        await loadProject();
+    } catch (e) { alert('Ошибка удаления'); }
+}
+
+// Lightbox навигация
+function openPhoto(index: number) { activePhotoIndex.value = index; }
+function closePhoto() { activePhotoIndex.value = null; }
+function nextPhoto() { if (activePhotoIndex.value !== null && activePhotoIndex.value < photos.value.length - 1) activePhotoIndex.value++; }
+function prevPhoto() { if (activePhotoIndex.value !== null && activePhotoIndex.value > 0) activePhotoIndex.value--; }
+
+function handleKeydown(e: KeyboardEvent) {
+    if (activePhotoIndex.value === null) return;
+    if (e.key === 'ArrowRight') nextPhoto();
+    if (e.key === 'ArrowLeft') prevPhoto();
+    if (e.key === 'Escape') closePhoto();
+}
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeydown);
+    loadProject();
+});
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
+</script>
+
+<template>
+    <div v-if="loading" class="status">Загрузка...</div>
+    <div v-else-if="error" class="status error">{{ error }}</div>
+    
+    <div v-else-if="project" class="page-wrapper">
+        <div class="container">
+            
+            <!-- Блокировка -->
+            <div v-if="project.is_private && !isUnlocked && !isOwner" class="lock-screen">
+                <h2>Приватный проект</h2>
+                <p>Введите пароль, чтобы просмотреть фотографии</p>
+                <div class="unlock-form">
+                    <input v-model="password" type="password" class="form-control" placeholder="Пароль" />
+                    <button @click="handleUnlock" class="btn-primary">Открыть</button>
+                </div>
+            </div>
+
+            <!-- Контент -->
+            <template v-else>
+                <header class="project-header">
+                    <div v-if="!isEditing">
+                        <h1 class="project-title">{{ project.title }}</h1>
+                        <p class="project-meta">{{ project.genre || 'Без жанра' }} • {{ project.shoot_date || 'Дата не указана' }}</p>
+                        <p class="project-desc">{{ project.description || 'Описание отсутствует.' }}</p>
+                        
+                        <div v-if="isOwner" class="owner-bar">
+                            <button @click="isEditing = true" class="btn-outline">Редактировать</button>
+                            <label class="btn-outline" style="cursor: pointer;">
+                                Добавить фото
+                                <input type="file" multiple accept="image/*" @change="handleUpload" style="display: none;" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Форма редактирования -->
+                    <div v-else class="edit-form">
+                        <h3>Редактирование проекта</h3>
+                        <input v-model="editForm.title" class="form-control" placeholder="Название" />
+                        <input v-model="editForm.genre" class="form-control" placeholder="Жанр" />
+                        <input v-model="editForm.shoot_date" type="date" class="form-control" />
+                        <textarea v-model="editForm.description" class="form-control" rows="3"></textarea>
+                        <label class="checkbox-row">
+                            <input type="checkbox" v-model="editForm.is_private" /> Приватный
+                        </label>
+                        <input v-if="editForm.is_private" v-model="editForm.access_password" class="form-control" placeholder="Пароль" />
+                        <div class="edit-actions">
+                            <button @click="isEditing = false" class="btn-outline">Отмена</button>
+                            <button @click="saveProject" class="btn-primary">Сохранить</button>
+                        </div>
+                    </div>
+                </header>
+
+                <div v-if="selectedPhotoIds.length > 0" class="delete-bar">
+                    <span>Выбрано фото: {{ selectedPhotoIds.length }}</span>
+                    <button @click="showDeleteModal = true" class="btn-delete">Удалить</button>
+                </div>
+
+                         <div v-if="photos.length === 0" class="empty-state">
+                    В этом проекте нет фотографий.
+                </div>
+                <div v-else class="photos-grid">
+                    <div 
+                        v-for="(photo, index) in photos" 
+                        :key="photo.id" 
+                        class="photo-item"
+                        :class="{ selected: selectedPhotoIds.includes(photo.id) }"
+                    >
+                        <img :src="photo.file_path" @click="openPhoto(index)" />
+                        <input 
+                            v-if="isOwner" 
+                            type="checkbox" 
+                            class="photo-checkbox" 
+                            :checked="selectedPhotoIds.includes(photo.id)"
+                            @change="togglePhotoSelection(photo.id)"
+                        />
+                        <a v-if="canDownload" :href="photo.file_path" download class="download-btn" @click.stop>Скачать</a>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Модалка удаления -->
+        <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
+            <div class="modal-content">
+                <h3>Удалить фотографии?</h3>
+                <p>Вы уверены, что хотите удалить {{ selectedPhotoIds.length }} фото? Это действие нельзя отменить.</p>
+                <div class="modal-actions">
+                    <button @click="showDeleteModal = false" class="btn-outline">Отмена</button>
+                    <button @click="confirmDelete" class="btn-primary" style="background:#C1121F;">Удалить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lightbox -->
+        <div v-if="activePhoto" class="lightbox" @click="closePhoto">
+            <button class="lb-close" @click="closePhoto">&times;</button>
+            <button v-if="activePhotoIndex! > 0" class="lb-arrow left" @click.stop="prevPhoto">&#10094;</button>
+            <img :src="activePhoto.file_path" class="lb-img" @click.stop />
+            <button v-if="activePhotoIndex! < photos.length - 1" class="lb-arrow right" @click.stop="nextPhoto">&#10095;</button>
+            <div class="lb-counter">{{ activePhotoIndex! + 1 }} / {{ photos.length }}</div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.page-wrapper { background: #FAFAFA; min-height: 100vh; font-family: 'Inter', sans-serif; color: #0d0d0d; padding: 60px 0; }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.project-header { border-bottom: 1px solid #E5E5E5; padding-bottom: 32px; margin-bottom: 32px; }
+.project-title { font-size: 40px; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.03em; }
+.project-meta { font-size: 16px; color: #5A5A5A; margin: 0 0 16px; }
+.project-desc { font-size: 16px; line-height: 1.6; color: #5A5A5A; max-width: 70ch; margin: 0 0 24px; }
+
+.owner-bar { display: flex; gap: 12px; }
+
+/* Buttons */
+.btn-primary { padding: 12px 24px; background: #800020; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-primary:hover { background: #66001a; }
+.btn-outline { padding: 12px 24px; background: #fff; color: #800020; border: 1px solid #800020; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; text-align: center; }
+.btn-outline:hover { background: #800020; color: #fff; }
+.btn-delete { padding: 8px 20px; background: #fff; color: #800020; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; }
+
+/* Edit Form */
+.edit-form { background: #fff; padding: 24px; border: 1px solid #E5E5E5; border-radius: 4px; display: flex; flex-direction: column; gap: 12px; max-width: 600px; }
+.form-control { padding: 12px; border: 1px solid #E5E5E5; border-radius: 4px; font-size: 15px; font-family: inherit; }
+.form-control:focus { outline: none; border-color: #800020; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.edit-actions { display: flex; gap: 12px; margin-top: 8px; }
+
+/* Delete bar */
+.delete-bar { display: flex; justify-content: space-between; align-items: center; background: #800020; color: #fff; padding: 14px 24px; border-radius: 4px; margin-bottom: 24px; }
+.delete-bar span { font-weight: 600; }
+
+.photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* <--- И ЗДЕСЬ */
+    gap: 20px;
+}
+.photo-item { position: relative; border-radius: 4px; overflow: hidden; background: #fff; border: 2px solid transparent; transition: 0.2s; }
+.photo-item.selected { border-color: #800020; }
+.photo-item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; cursor: pointer; }
+.photo-checkbox { position: absolute; top: 12px; left: 12px; width: 22px; height: 22px; accent-color: #800020; cursor: pointer; }
+.download-btn { display: block; text-align: center; padding: 10px; background: #FAFAFA; color: #0d0d0d; font-size: 14px; font-weight: 600; text-decoration: none; transition: 0.2s; }
+.download-btn:hover { background: #E5E5E5; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: #fff; padding: 32px; border-radius: 8px; max-width: 400px; width: 90%; }
+.modal-content h3 { margin-top: 0; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+
+/* Lightbox */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; cursor: zoom-out; backdrop-filter: blur(5px); }
+.lb-img { max-width: 90%; max-height: 90%; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: default; }
+.lb-close { position: absolute; top: 20px; right: 30px; background: none; border: none; color: #fff; font-size: 40px; cursor: pointer; }
+.lb-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: #fff; font-size: 32px; padding: 20px; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+.lb-arrow:hover { background: rgba(255,255,255,0.3); }
+.lb-arrow.left { left: 20px; }
+.lb-arrow.right { right: 20px; }
+.lb-counter { position: absolute; bottom: 24px; color: #fff; font-size: 18px; background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 20px; }
+
+/* Lock */
+.lock-screen { text-align: center; padding: 80px 20px; background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; max-width: 400px; margin: 0 auto; }
+.lock-screen h2 { color: #800020; margin-top: 0; }
+.unlock-form { display: flex; gap: 12px; margin-top: 24px; }
+.unlock-form .form-control { flex-grow: 1; }
+
+.status { text-align: center; padding: 100px; font-size: 18px; color: #5A5A5A; }
+.status.error { color: #C1121F; }
+.empty-state { text-align: center; padding: 40px; border: 1px dashed #E5E5E5; background: #fff; color: #666; border-radius: 4px; }
+</style>
+
+
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+const router = useRouter();
+const auth = useAuthStore();
+
+const email = ref('');
+const password = ref('');
+const name = ref('');
+const role = ref<'photographer' | 'customer'>('customer');
+
+async function handleRegister() {
+    try {
+        await auth.register({
+            email: email.value,
+            password: password.value,
+            name: name.value,
+            role: role.value
+        });
+        router.push('/dashboard');
+    } catch (e) {
+        // Ошибка в auth.error
+    }
+}
+</script>
+
+<template>
+    <div class="page-container">
+        <div class="auth-card">
+            <h1>Регистрация</h1>
+            
+            <div v-if="auth.error" class="error-message">{{ auth.error }}</div>
+
+            <form @submit.prevent="handleRegister">
+                <div class="form-group">
+                    <label>Имя</label>
+                    <input v-model="name" type="text" class="form-control" placeholder="Как вас зовут?" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input v-model="email" type="email" class="form-control" placeholder="Ваш email" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input v-model="password" type="password" class="form-control" placeholder="Придумайте пароль" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Кто вы?</label>
+                    <select v-model="role" class="form-control">
+                        <option value="customer">Я ищу фотографа (Заказчик)</option>
+                        <option value="photographer">Я фотограф</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" :disabled="auth.loading">
+                    {{ auth.loading ? 'Регистрация...' : 'Создать аккаунт' }}
+                </button>
+            </form>
+
+            <div class="auth-links">
+                Уже есть аккаунт? <RouterLink to="/login">Войти</RouterLink>
+            </div>
+        </div>
+    </div>
+</template>
+
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { API } from '@/services/api';
+import { useAuthStore } from '@/stores/auth';
+
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
+const photographerId = Number(route.params.id);
+
+const profile = ref<any>(null);
+const loading = ref(true);
+const error = ref('');
+
+const name = ref(auth.user?.name || '');
+const contact = ref(auth.user?.email || '');
+const desiredDate = ref('');
+const genre = ref('');
+const comment = ref('');
+const isSending = ref(false);
+
+onMounted(async () => {
+    try {
+        const allProfiles = await API.profiles.getAll();
+        profile.value = allProfiles.find((p: any) => p.user_id_FK === photographerId);
+        if (!profile.value) error.value = 'Фотограф не найден';
+    } finally { loading.value = false; }
+});
+
+async function submitRequest() {
+    isSending.value = true;
+    try {
+        await API.requests.create({
+            photographer_id: profile.value.id,
+            name: name.value,
+            contact: contact.value,
+            desired_date: desiredDate.value,
+            genre: genre.value,
+            comment: comment.value
+        });
+        alert('Заявка отправлена!');
+        router.push('/dashboard');
+    } catch (e) { error.value = (e as Error).message; } finally { isSending.value = false; }
+}
+</script>
+
+<template>
+    <div class="page-wrapper">
+        <div v-if="loading" class="status">Загрузка...</div>
+        <div v-else-if="error || !profile" class="status error">{{ error || 'Фотограф не найден' }}</div>
+        
+        <div v-else class="form-card">
+            <div class="form-header">
+                <h1 class="form-title">Оставить заявку</h1>
+                <p class="form-subtitle">Вы оставляете заявку для <strong>{{ profile.photographer_name }}</strong></p>
+            </div>
+
+            <form @submit.prevent="submitRequest" class="form-layout">
+                <div class="form-group">
+                    <label>Ваше имя</label>
+                    <input v-model="name" type="text" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label>Контакт (телефон или email)</label>
+                    <input v-model="contact" type="text" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label>Желаемая дата</label>
+                    <input v-model="desiredDate" type="date" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Жанр съемки</label>
+                    <input v-model="genre" type="text" class="form-control" placeholder="Свадьба, портрет..." />
+                </div>
+                <div class="form-group">
+                    <label>Комментарий</label>
+                    <textarea v-model="comment" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-submit" :disabled="isSending">
+                    {{ isSending ? 'Отправка...' : 'Отправить заявку' }}
+                </button>
+            </form>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.page-wrapper { background: #FAFAFA; min-height: 100vh; padding: 60px 20px; display: flex; justify-content: center; font-family: 'Inter', sans-serif; }
+.form-card { background: #fff; border: 1px solid #E5E5E5; border-radius: 8px; padding: 40px; width: 100%; max-width: 600px; }
+.form-header { text-align: center; margin-bottom: 32px; }
+.form-title { font-size: 28px; font-weight: 800; margin: 0 0 8px; color: #0d0d0d; }
+.form-subtitle { font-size: 16px; color: #5A5A5A; margin: 0; }
+.form-subtitle strong { color: #800020; }
+.form-layout { display: flex; flex-direction: column; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label { font-size: 14px; font-weight: 600; color: #0d0d0d; }
+.form-control { padding: 12px 14px; border: 1px solid #E5E5E5; border-radius: 4px; font-size: 15px; background: #F5F5F5; font-family: inherit; }
+.form-control:focus { outline: none; border-color: #800020; background: #fff; }
+.btn-submit { width: 100%; padding: 14px; background: #800020; color: #fff; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+.btn-submit:hover { background: #66001a; }
+.status { text-align: center; padding: 100px; font-size: 18px; color: #5A5A5A; }
+.status.error { color: #C1121F; }
+</style>
+
+
+
+<script setup lang="ts">
+import { useAuthStore } from '@/stores/auth';
+const auth = useAuthStore();
+</script>
+
+<template>
+    <header class="main-header">
+        <div class="header-inner">
+            <RouterLink to="/" class="logo">Фотобудка</RouterLink>
+            
+            <nav class="nav-links">
+                <template v-if="auth.isAuthenticated">
+                    <!-- Умная ссылка: Фотограф -> Профиль, Заказчик -> Дашборд -->
+                    <RouterLink 
+                        :to="auth.isPhotographer ? `/profile/${auth.user?.id}` : '/dashboard'"
+                    >
+                        Мой профиль
+                    </RouterLink>
+                    <span class="user-name">{{ auth.user?.name }}</span>
+                </template>
+                <template v-else>
+                    <RouterLink to="/login">Войти</RouterLink>
+                    <RouterLink to="/register" class="btn-register">Регистрация</RouterLink>
+                </template>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <RouterView />
+    </main>
+</template>
+
+<style scoped>
+.main-header {
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(94, 18, 36, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #800020;
+    text-decoration: none;
+    letter-spacing: 1px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #5e1224;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover {
+    color: #800020;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #800020;
+    background: #fdfafb;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.btn-register {
+    background-color: #800020;
+    color: white !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.btn-register:hover {
+    background-color: #5e1224;
+}
+</style>
+
+
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import App from './App.vue';
+import router from './router';
+import './style.css';
+import './assets/main.css';
+
+const app = createApp(App);
+
+app.use(createPinia());
+app.use(router);
+
+app.mount('#app');
+
+
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      },
+      // ДОБАВЬ ВОТ ЭТО:
+      '/storage': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
+  }
+});
+
+
+

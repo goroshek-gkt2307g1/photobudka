@@ -1,0 +1,1535 @@
+<section class="vb-h4p" data-section-name="Регистрация" data-vibeblock-unique-section="yes" aria-labelledby="vb-h4p-title">
+<style>
+.vb-h4p,
+.vb-h4p * { box-sizing: border-box; }
+.vb-h4p input,
+.vb-h4p textarea,
+.vb-h4p select { font: inherit; }
+
+.vb-h4p {
+  --vb-h4p-black: #0d0d0d;
+  --vb-h4p-gray: #5a5a5a;
+  --vb-h4p-line: #e5e5e5;
+  --vb-h4p-burgundy: #800020;
+  --vb-h4p-burgundy-deep: #66001a;
+  --vb-h4p-bg: #fafafa;
+  --vb-h4p-field: #f5f5f5;
+  background: var(--vb-h4p-bg);
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  color: var(--vb-h4p-black);
+  padding: clamp(56px, 10vh, 112px) clamp(16px, 4vw, 48px);
+  display: flex;
+  justify-content: center;
+  -webkit-font-smoothing: antialiased;
+}
+@keyframes vb-h4p-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.vb-h4p__card {
+  width: 100%;
+  max-width: 600px;
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid var(--vb-h4p-line);
+  border-radius: 6px;
+  padding: clamp(28px, 5vw, 44px) clamp(24px, 4vw, 40px);
+  animation: vb-h4p-in .55s cubic-bezier(.16, .84, .44, 1) both;
+}
+.vb-h4p__title {
+  margin: 0;
+  font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(24px, 4.5vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--vb-h4p-black);
+}
+.vb-h4p__subtitle {
+  margin: 10px 0 28px;
+  font-size: 16px;
+  line-height: 1.55;
+  text-align: center;
+  color: var(--vb-h4p-gray);
+}
+.vb-h4p-form {
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+}
+.vb-h4p-group { margin-bottom: 16px; }
+.vb-h4p-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vb-h4p-black);
+}
+.vb-h4p-label--req::after { content: " *"; color: var(--vb-h4p-burgundy); }
+.vb-h4p-input {
+  display: block;
+  width: 100%;
+  padding: 13px 14px;
+  background: var(--vb-h4p-field);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--vb-h4p-black);
+  transition: border-color .2s ease-out, background-color .2s ease-out;
+}
+.vb-h4p-input::placeholder { color: #7a7a7a; }
+.vb-h4p-input:hover { background: #f0f0f0; }
+.vb-h4p-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--vb-h4p-burgundy);
+}
+.vb-h4p-group--pass .vb-h4p-input { padding-right: 76px; }
+
+/* Показать/скрыть пароль */
+.vb-h4p-eye {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vb-h4p-gray);
+  cursor: pointer;
+  transition: color .2s ease-out;
+}
+.vb-h4p-eye:hover { color: var(--vb-h4p-burgundy); }
+.vb-h4p-eye:focus-visible { outline: 2px solid var(--vb-h4p-burgundy); outline-offset: 2px; }
+.vb-h4p-field { position: relative; }
+
+.t-input-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #b3261e;
+}
+.js-errorbox-all {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid #f0c4c4;
+  background: #fdf1f1;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #b3261e;
+}
+.js-successbox {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #cfe9d9;
+  background: #eefaf3;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #0d6b3f;
+  text-align: center;
+}
+
+/* Согласие */
+.vb-h4p-checkrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 20px;
+  cursor: pointer;
+}
+.vb-h4p-check {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #ffffff;
+  border: 1px solid #9a9a9a;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color .2s ease-out;
+}
+.vb-h4p-check::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--vb-h4p-burgundy);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform .18s cubic-bezier(.16, .84, .44, 1);
+}
+.vb-h4p-check:checked { border-color: var(--vb-h4p-burgundy); }
+.vb-h4p-check:checked::after { transform: rotate(45deg) scale(1); }
+.vb-h4p-check:focus-visible { outline: 2px solid var(--vb-h4p-burgundy); outline-offset: 2px; }
+.vb-h4p-checktext {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--vb-h4p-gray);
+}
+.vb-h4p-checktext a {
+  color: var(--vb-h4p-burgundy);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Кнопки */
+.vb-h4p__submit { width: 100%; margin-top: 24px; }
+.vb-h4p-form .t-btnflex {
+  background: var(--vb-h4p-burgundy);
+  color: #ffffff;
+  border: 1px solid var(--vb-h4p-burgundy);
+  border-radius: 4px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  transition: background-color .25s ease-out, border-color .25s ease-out;
+}
+.vb-h4p-form .t-btnflex:hover {
+  background: var(--vb-h4p-burgundy-deep);
+  border-color: var(--vb-h4p-burgundy-deep);
+}
+.vb-h4p-form .t-btnflex:focus-visible { outline: 2px solid var(--vb-h4p-burgundy); outline-offset: 3px; }
+
+.vb-h4p__alt {
+  margin: 20px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--vb-h4p-line);
+  font-size: 15px;
+  text-align: center;
+  color: var(--vb-h4p-gray);
+}
+.vb-h4p__alt a {
+  color: var(--vb-h4p-burgundy);
+  font-weight: 700;
+  text-decoration: none;
+}
+.vb-h4p__alt a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .vb-h4p { padding-top: 40px; padding-bottom: 56px; }
+  .vb-h4p__title { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vb-h4p__card { animation: none; }
+  .vb-h4p-input,
+  .vb-h4p-check::after,
+  .vb-h4p-form .t-btnflex { transition: none; }
+}
+</style>
+
+<div class="vb-h4p__card">
+  <h1 class="vb-h4p__title" id="vb-h4p-title">Создать аккаунт</h1>
+  <p class="vb-h4p__subtitle">Фотограф или заказчик — регистрация занимает минуту</p>
+
+  <form id="vb-h4p-form" name="vb-h4p-form" class="vb-h4p-form t-form js-form-proccess" role="form" action="#" method="POST" data-vibeblock-form="true" data-inputbox=".vb-h4p-group" data-formactiontype="2" data-error-popup="y" data-success-popup="y" novalidate>
+    <div class="js-successbox t-form__successbox" style="display: none"></div>
+
+    <div class="vb-h4p-group">
+      <label class="vb-h4p-label vb-h4p-label--req" for="vb-h4p-name">Имя</label>
+      <input class="vb-h4p-input js-tilda-rule" id="vb-h4p-name" type="text" name="Name" placeholder="Как вас будут видеть на сайте" autocomplete="name" data-tilda-req="1">
+      <div class="t-input-error"></div>
+    </div>
+
+    <div class="vb-h4p-group">
+      <label class="vb-h4p-label vb-h4p-label--req" for="vb-h4p-email">Email</label>
+      <input class="vb-h4p-input js-tilda-rule" id="vb-h4p-email" type="email" name="Email" placeholder="you@example.com" autocomplete="email" data-tilda-req="1" data-tilda-rule="email">
+      <div class="t-input-error"></div>
+    </div>
+
+    <div class="vb-h4p-group vb-h4p-group--pass">
+      <label class="vb-h4p-label vb-h4p-label--req" for="vb-h4p-pass">Пароль</label>
+      <div class="vb-h4p-field">
+        <input class="vb-h4p-input js-tilda-rule" id="vb-h4p-pass" type="password" name="Password" placeholder="Не короче 8 символов" autocomplete="new-password" data-tilda-req="1" data-tilda-rule-minlength="8">
+        <button class="vb-h4p-eye" type="button" data-eye="vb-h4p-pass" aria-label="Показать пароль">Показать</button>
+      </div>
+      <div class="t-input-error"></div>
+    </div>
+
+    <div class="vb-h4p-group vb-h4p-group--pass">
+      <label class="vb-h4p-label vb-h4p-label--req" for="vb-h4p-pass2">Повторите пароль</label>
+      <div class="vb-h4p-field">
+        <input class="vb-h4p-input" id="vb-h4p-pass2" type="password" name="PasswordRepeat" placeholder="Введите пароль ещё раз" autocomplete="new-password" data-tilda-req="1">
+        <button class="vb-h4p-eye" type="button" data-eye="vb-h4p-pass2" aria-label="Показать пароль">Показать</button>
+      </div>
+      <div class="t-input-error" id="vb-h4p-pass2-error"></div>
+    </div>
+
+    <label class="vb-h4p-checkrow" for="vb-h4p-agree">
+      <input class="vb-h4p-check" id="vb-h4p-agree" type="checkbox" name="Agree" value="yes" data-tilda-req="1">
+      <span class="vb-h4p-checktext">Я принимаю <a href="#">правила сервиса</a> и согласен на обработку персональных данных</span>
+    </label>
+
+    <div class="js-errorbox-all" style="display: none">
+      <div class="js-rule-error-all"></div>
+    </div>
+
+    <button type="submit" class="t-submit t-btnflex t-btnflex_md vb-h4p__submit">
+      <span class="t-btnflex__text">Зарегистрироваться</span>
+    </button>
+  </form>
+
+  <p class="vb-h4p__alt">Уже есть аккаунт? <a href="#">Войти</a></p>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('vb-h4p-form');
+  if (!form) return;
+
+  var pass = document.getElementById('vb-h4p-pass');
+  var pass2 = document.getElementById('vb-h4p-pass2');
+  var pass2Error = document.getElementById('vb-h4p-pass2-error');
+  var btn = form.querySelector('[type="submit"]');
+  var eyes = form.querySelectorAll('.vb-h4p-eye');
+
+  Array.prototype.forEach.call(eyes, function (eye) {
+    eye.addEventListener('click', function () {
+      var input = document.getElementById(eye.getAttribute('data-eye'));
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.textContent = show ? 'Скрыть' : 'Показать';
+      eye.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
+    });
+  });
+
+  function checkMatch(showError) {
+    if (!pass || !pass2 || !pass2Error) return true;
+    var mismatch = pass.value !== pass2.value;
+    if (mismatch && showError) {
+      pass2Error.textContent = 'Пароли не совпадают';
+    } else {
+      pass2Error.textContent = '';
+    }
+    return !mismatch;
+  }
+
+  if (pass2) {
+    pass2.addEventListener('input', function () { checkMatch(false); });
+    pass2.addEventListener('blur', function () { checkMatch(true); });
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (!checkMatch(true)) {
+      pass2.focus();
+      return;
+    }
+    if (typeof window.t_forms__initBtnClick !== 'function') return;
+    window.t_forms__initBtnClick({
+      target: btn,
+      srcElement: btn,
+      preventDefault: function () {}
+    });
+  });
+})();
+</script>
+</section>
+
+<section class="vb-k7m" id="vb-k7m-root" data-section-name="Экраны мобильного приложения" data-vibeblock-unique-section="yes" aria-labelledby="vb-k7m-title">
+<style>
+.vb-k7m,
+.vb-k7m * { box-sizing: border-box; }
+.vb-k7m input,
+.vb-k7m textarea,
+.vb-k7m select { font: inherit; }
+
+.vb-k7m {
+  --vb-k7m-black: #0d0d0d;
+  --vb-k7m-gray: #5a5a5a;
+  --vb-k7m-line: #e5e5e5;
+  --vb-k7m-burgundy: #800020;
+  --vb-k7m-burgundy-deep: #66001a;
+  --vb-k7m-bg: #fafafa;
+  --vb-k7m-field: #f5f5f5;
+  background: var(--vb-k7m-bg);
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  color: var(--vb-k7m-black);
+  padding: clamp(40px, 6vw, 72px) clamp(14px, 4vw, 48px) clamp(56px, 8vw, 96px);
+  -webkit-font-smoothing: antialiased;
+}
+.vb-k7m__inner { max-width: 1340px; margin: 0 auto; }
+.vb-k7m__heading {
+  margin: 0;
+  font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--vb-k7m-black);
+  text-wrap: balance;
+}
+.vb-k7m__lead {
+  margin: 12px 0 0;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--vb-k7m-gray);
+  text-wrap: pretty;
+}
+.vb-k7m__gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: clamp(30px, 4vw, 52px);
+  justify-items: center;
+  margin-top: clamp(28px, 4vw, 48px);
+}
+
+/* ---------- Карточка-устройство ---------- */
+.vb-k7m-item { margin: 0; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.vb-k7m-item__label { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--vb-k7m-black); }
+.vb-k7m-item__num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--vb-k7m-burgundy);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.vb-k7m-phone {
+  width: 100%;
+  border: 10px solid #171717;
+  border-radius: 46px;
+  background: #171717;
+  box-shadow: 0 26px 50px rgba(13, 13, 13, .18);
+}
+.vb-k7m-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 740px;
+  border-radius: 36px;
+  overflow: hidden;
+  background: var(--vb-k7m-bg);
+}
+.vb-k7m-status {
+  flex: none;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 0 28px;
+  background: var(--vb-k7m-bg);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--vb-k7m-black);
+}
+.vb-k7m-status--w { background: #ffffff; }
+.vb-k7m-status__icons { width: 66px; height: 12px; color: var(--vb-k7m-black); }
+.vb-k7m-body { flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; padding: 16px; }
+.vb-k7m-body::-webkit-scrollbar { display: none; }
+
+/* ---------- Шапка ---------- */
+.vb-k7m-hdr {
+  flex: none;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--vb-k7m-line);
+}
+.vb-k7m-hdr__title {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--vb-k7m-black);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vb-k7m-hdr__title--lg { font-size: 20px; }
+.vb-k7m-hdr--brand { justify-content: space-between; padding: 0 4px 0 16px; }
+.vb-k7m-logo {
+  font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--vb-k7m-burgundy);
+}
+.vb-k7m-iconbtn {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--vb-k7m-black);
+  cursor: pointer;
+}
+.vb-k7m-iconbtn svg { width: 24px; height: 24px; display: block; }
+.vb-k7m-iconbtn:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: -4px; border-radius: 8px; }
+
+/* ---------- Поля и кнопки ---------- */
+.vb-k7m-group { margin-bottom: 16px; }
+.vb-k7m-lab { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--vb-k7m-black); }
+.vb-k7m-field {
+  display: block;
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  background: var(--vb-k7m-field);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  color: var(--vb-k7m-black);
+  transition: border-color .2s ease-out, background-color .2s ease-out;
+}
+.vb-k7m-field::placeholder { color: #7a7a7a; }
+.vb-k7m-field:hover { background: #f0f0f0; }
+.vb-k7m-field:focus { outline: none; background: #ffffff; border-color: var(--vb-k7m-burgundy); }
+.vb-k7m-fieldwrap { position: relative; }
+.vb-k7m-fieldwrap .vb-k7m-field { padding-right: 78px; }
+.vb-k7m-eye {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 36px;
+  padding: 0 10px;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vb-k7m-gray);
+  cursor: pointer;
+}
+.vb-k7m-eye:hover { color: var(--vb-k7m-burgundy); }
+.vb-k7m-eye--icon { width: 44px; padding: 0; display: grid; place-items: center; }
+.vb-k7m-eye--icon svg { width: 20px; height: 20px; display: block; }
+.vb-k7m-eye:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: 0; }
+.vb-k7m-select { appearance: none; -webkit-appearance: none; padding-right: 40px; cursor: pointer; }
+.vb-k7m-selectwrap { position: relative; }
+.vb-k7m-selectwrap > svg { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; color: var(--vb-k7m-gray); }
+.vb-k7m-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  background: var(--vb-k7m-burgundy);
+  color: #ffffff;
+  border: 1px solid var(--vb-k7m-burgundy);
+  border-radius: 8px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .2s ease-out, color .2s ease-out, border-color .2s ease-out;
+}
+.vb-k7m-btn:hover { background: var(--vb-k7m-burgundy-deep); border-color: var(--vb-k7m-burgundy-deep); }
+.vb-k7m-btn:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: 2px; }
+.vb-k7m-btn--gray { background: #efefef; border-color: #efefef; color: var(--vb-k7m-black); font-size: 14px; }
+.vb-k7m-btn--gray:hover { background: #e4e4e4; border-color: #e4e4e4; }
+.vb-k7m-btn--ghost { background: #ffffff; color: var(--vb-k7m-burgundy); }
+.vb-k7m-btn--ghost:hover { background: var(--vb-k7m-burgundy); color: #ffffff; }
+.vb-k7m-btnrow { display: flex; gap: 12px; }
+.vb-k7m-btnrow .vb-k7m-btn { flex: 1; }
+.vb-k7m-sticky {
+  flex: none;
+  padding: 12px 16px 14px;
+  background: #ffffff;
+  border-top: 1px solid var(--vb-k7m-line);
+}
+
+/* ---------- Нижняя навигация ---------- */
+.vb-k7m-tabs { flex: none; height: 64px; display: flex; background: #ffffff; border-top: 1px solid var(--vb-k7m-line); }
+.vb-k7m-tab {
+  flex: 1;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vb-k7m-gray);
+  cursor: pointer;
+  transition: color .2s ease-out;
+}
+.vb-k7m-tab svg { width: 24px; height: 24px; display: block; }
+.vb-k7m-tab.is-active { color: var(--vb-k7m-burgundy); }
+.vb-k7m-tab:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: -4px; }
+
+/* ---------- Элементы контента ---------- */
+.vb-k7m-search { position: relative; margin-bottom: 14px; }
+.vb-k7m-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--vb-k7m-gray); pointer-events: none; }
+.vb-k7m-search .vb-k7m-field { padding-left: 42px; background: #ffffff; border-color: var(--vb-k7m-line); }
+.vb-k7m-search .vb-k7m-field:hover { background: #ffffff; border-color: #cfcfcf; }
+.vb-k7m-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 16px; }
+.vb-k7m-chips::-webkit-scrollbar { display: none; }
+.vb-k7m-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid var(--vb-k7m-line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vb-k7m-black);
+  white-space: nowrap;
+}
+.vb-k7m-chip--active { background: var(--vb-k7m-burgundy); border-color: var(--vb-k7m-burgundy); color: #ffffff; }
+.vb-k7m-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.vb-k7m-pcard { display: flex; gap: 12px; padding: 12px; background: #ffffff; border: 1px solid #efefef; border-radius: 8px; }
+.vb-k7m-pcard__body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vb-k7m-pcard__name { margin: 0; font-size: 16px; font-weight: 700; color: var(--vb-k7m-black); }
+.vb-k7m-pcard__city { margin: 3px 0 0; font-size: 14px; color: var(--vb-k7m-gray); }
+.vb-k7m-pcard__price { margin: auto 0 0; padding-top: 8px; font-size: 16px; font-weight: 700; color: var(--vb-k7m-burgundy); }
+.vb-k7m-ph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #eae7e4, #d6d1cc);
+  overflow: hidden;
+}
+.vb-k7m-ph--b { background: linear-gradient(135deg, #e2e4e6, #ccd0d3); }
+.vb-k7m-ph--c { background: linear-gradient(135deg, #e7e2e0, #cfc7c3); }
+.vb-k7m-ph--d { background: linear-gradient(135deg, #dcd9d6, #c4c0bc); }
+.vb-k7m-ph--e { background: linear-gradient(135deg, #e4e3e6, #cdcbd0); }
+.vb-k7m-ph img { width: 34%; height: auto; opacity: .32; }
+.vb-k7m-pcard__img { flex: none; width: 80px; height: 80px; border-radius: 8px; }
+.vb-k7m-ava {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: #f3e4e8;
+  border: 1px solid #ead6dc;
+  color: var(--vb-k7m-burgundy);
+  font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+}
+.vb-k7m-ava--100 { width: 100px; height: 100px; font-size: 30px; }
+.vb-k7m-ava--80 { width: 80px; height: 80px; font-size: 24px; }
+.vb-k7m-profile { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.vb-k7m-profile__name { margin: 14px 0 0; font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--vb-k7m-black); }
+.vb-k7m-profile__name--sm { font-size: 20px; }
+.vb-k7m-profile__city { margin: 4px 0 0; font-size: 14px; color: var(--vb-k7m-gray); }
+.vb-k7m-profile__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.vb-k7m-profile__price { margin: 14px 0 0; font-size: 20px; font-weight: 700; color: var(--vb-k7m-burgundy); }
+.vb-k7m-sect { margin: 24px 0 12px; font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif; font-size: 18px; font-weight: 700; color: var(--vb-k7m-black); }
+.vb-k7m-desc { margin: 16px 0 0; font-size: 15px; line-height: 1.6; color: var(--vb-k7m-gray); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.vb-k7m-desc.is-open { display: block; overflow: visible; }
+.vb-k7m-more {
+  margin: 8px 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vb-k7m-burgundy);
+  cursor: pointer;
+}
+.vb-k7m-more:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: 2px; }
+.vb-k7m-carousel { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 4px; scroll-snap-type: x mandatory; }
+.vb-k7m-carousel::-webkit-scrollbar { display: none; }
+.vb-k7m-carousel__item { flex: none; width: 240px; height: 240px; border-radius: 8px; scroll-snap-align: start; }
+.vb-k7m-dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.vb-k7m-dots span { width: 6px; height: 6px; border-radius: 50%; background: #d4d4d4; }
+.vb-k7m-dots span.is-active { background: var(--vb-k7m-burgundy); }
+
+/* Проекты владельца */
+.vb-k7m-proj { display: flex; align-items: center; gap: 12px; padding: 12px; background: #ffffff; border: 1px solid #efefef; border-radius: 8px; }
+.vb-k7m-proj__img { flex: none; width: 64px; height: 64px; border-radius: 8px; }
+.vb-k7m-proj__body { flex: 1; min-width: 0; }
+.vb-k7m-proj__name { margin: 0; font-size: 16px; font-weight: 700; color: var(--vb-k7m-black); }
+.vb-k7m-proj__date { margin: 3px 0 6px; font-size: 14px; color: var(--vb-k7m-gray); }
+.vb-k7m-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #efefef;
+  color: var(--vb-k7m-gray);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.vb-k7m-badge--wait { background: #fff4d6; color: #8a6100; }
+.vb-k7m-badge--ok { background: #e4f4ea; color: #0d6b3f; }
+.vb-k7m-badge--priv { background: #f3e4e8; color: var(--vb-k7m-burgundy); }
+
+/* Заявки фотографа */
+.vb-k7m-pagetitle { margin: 0; font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--vb-k7m-black); }
+.vb-k7m-pagesub { margin: 6px 0 18px; font-size: 14px; font-weight: 600; color: var(--vb-k7m-burgundy); }
+.vb-k7m-req { position: relative; overflow: hidden; border-radius: 8px; }
+.vb-k7m-req__action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--vb-k7m-burgundy);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.vb-k7m-req__action svg { width: 22px; height: 22px; }
+.vb-k7m-req__card {
+  position: relative;
+  z-index: 1;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid var(--vb-k7m-line);
+  border-radius: 8px;
+  touch-action: pan-y;
+  transition: transform .28s cubic-bezier(.16, .84, .44, 1);
+}
+.vb-k7m-req__card.is-dragging { transition: none; }
+.vb-k7m-req__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.vb-k7m-req__name { margin: 0; font-size: 16px; font-weight: 700; color: var(--vb-k7m-black); }
+.vb-k7m-req__meta { margin: 5px 0 0; font-size: 14px; color: var(--vb-k7m-gray); }
+.vb-k7m-req__note { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: var(--vb-k7m-gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Кабинет заказчика */
+.vb-k7m-menu { background: #ffffff; border: 1px solid var(--vb-k7m-line); border-radius: 8px; overflow: hidden; }
+.vb-k7m-menu__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 0;
+  border-bottom: 1px solid var(--vb-k7m-line);
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--vb-k7m-black);
+  text-align: left;
+  cursor: pointer;
+}
+.vb-k7m-menu__row:last-child { border-bottom: 0; }
+.vb-k7m-menu__row svg { flex: none; width: 20px; height: 20px; color: var(--vb-k7m-gray); }
+.vb-k7m-menu__row span { flex: 1; }
+.vb-k7m-menu__row .vb-k7m-chev { width: 16px; height: 16px; color: #b0b0b0; }
+.vb-k7m-menu__row--danger { color: #d93025; }
+.vb-k7m-menu__row--danger svg { color: #d93025; }
+.vb-k7m-menu__row:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: -2px; }
+.vb-k7m-menu__panel { padding: 12px 14px 14px; background: #fafafa; border-bottom: 1px solid var(--vb-k7m-line); display: flex; flex-direction: column; gap: 10px; }
+.vb-k7m-menu__panel[hidden] { display: none; }
+.vb-k7m-minireq { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: #ffffff; border: 1px solid var(--vb-k7m-line); border-radius: 8px; }
+.vb-k7m-minireq__t { margin: 0; font-size: 14px; font-weight: 700; color: var(--vb-k7m-black); }
+.vb-k7m-minireq__d { margin: 2px 0 0; font-size: 13px; color: var(--vb-k7m-gray); }
+
+/* Создание проекта */
+.vb-k7m-priv { display: flex; align-items: center; gap: 10px; padding: 14px; background: #ffffff; border: 1px solid var(--vb-k7m-line); border-radius: 8px; cursor: pointer; }
+.vb-k7m-check {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #ffffff;
+  border: 1.5px solid #9a9a9a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color .2s ease-out;
+}
+.vb-k7m-check::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6.5px;
+  width: 4.5px;
+  height: 9px;
+  border: solid var(--vb-k7m-burgundy);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform .18s cubic-bezier(.16, .84, .44, 1);
+}
+.vb-k7m-check:checked { border-color: var(--vb-k7m-burgundy); }
+.vb-k7m-check:checked::after { transform: rotate(45deg) scale(1); }
+.vb-k7m-check:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: 2px; }
+.vb-k7m-priv__text { font-size: 15px; color: var(--vb-k7m-black); }
+.vb-k7m-privgroup[hidden] { display: none; }
+.vb-k7m-privgroup { margin-top: 12px; animation: vb-k7m-fade .3s cubic-bezier(.16, .84, .44, 1) both; }
+@keyframes vb-k7m-fade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.vb-k7m-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 88px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1.5px dashed var(--vb-k7m-line);
+  border-radius: 8px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vb-k7m-burgundy);
+  cursor: pointer;
+  transition: border-color .2s ease-out, background-color .2s ease-out;
+}
+.vb-k7m-upload:hover { border-color: var(--vb-k7m-burgundy); background: #fdf8f9; }
+.vb-k7m-upload svg { width: 22px; height: 22px; }
+.vb-k7m-upload:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: 2px; }
+.vb-k7m-hint { margin: 8px 0 0; font-size: 12px; color: var(--vb-k7m-gray); text-align: center; }
+
+/* Альбом */
+.vb-k7m-meta { margin: 0 0 14px; font-size: 14px; color: var(--vb-k7m-gray); }
+@keyframes vb-k7m-bar { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.vb-k7m-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px 0 16px;
+  margin-bottom: 14px;
+  background: var(--vb-k7m-burgundy);
+  border-radius: 8px;
+  animation: vb-k7m-bar .3s cubic-bezier(.16, .84, .44, 1) both;
+}
+.vb-k7m-bar[hidden] { display: none; }
+.vb-k7m-bar__text { font-size: 14px; font-weight: 700; color: #ffffff; }
+.vb-k7m-bar__btn {
+  flex: none;
+  height: 36px;
+  padding: 0 16px;
+  background: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--vb-k7m-burgundy);
+  cursor: pointer;
+}
+.vb-k7m-bar__btn:hover { background: #f4e8eb; }
+.vb-k7m-bar__btn:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+.vb-k7m-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; list-style: none; margin: 0; padding: 0; }
+.vb-k7m-tile { position: relative; border-radius: 8px; overflow: hidden; }
+.vb-k7m-tile .vb-k7m-ph { aspect-ratio: 1 / 1; border-radius: 8px; transition: opacity .2s ease-out; }
+.vb-k7m-tile.is-checked .vb-k7m-ph { opacity: .55; }
+.vb-k7m-tile__check { position: absolute; top: 8px; left: 8px; z-index: 1; }
+.vb-k7m-grid__empty { grid-column: 1 / -1; margin: 0; padding: 32px 0; font-size: 15px; color: var(--vb-k7m-gray); text-align: center; }
+
+/* Экран блокировки */
+.vb-k7m-lock { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 8px; }
+.vb-k7m-lock__circle {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--vb-k7m-burgundy);
+  color: #ffffff;
+}
+.vb-k7m-lock__circle svg { width: 32px; height: 32px; }
+.vb-k7m-lock__title { margin: 20px 0 0; font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--vb-k7m-black); }
+.vb-k7m-lock__text { margin: 8px 0 0; max-width: 280px; font-size: 14px; line-height: 1.55; color: var(--vb-k7m-gray); }
+.vb-k7m-lock__form { width: 100%; max-width: 300px; margin-top: 24px; }
+.vb-k7m-lock__link { display: inline-block; margin-top: 16px; font-size: 13px; color: var(--vb-k7m-gray); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Авторизация */
+.vb-k7m-auth { padding-top: 12px; }
+.vb-k7m-auth__logo { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto; border-radius: 8px; background: var(--vb-k7m-burgundy); color: #ffffff; }
+.vb-k7m-auth__logo svg { width: 26px; height: 26px; }
+.vb-k7m-auth__title { margin: 16px 0 0; font-family: var(--t-headline-font, "Inter"), "Helvetica Neue", Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; text-align: center; color: var(--vb-k7m-black); }
+.vb-k7m-seg { display: flex; gap: 4px; margin-top: 18px; padding: 4px; background: #f0f0f0; border-radius: 8px; }
+.vb-k7m-seg__btn {
+  flex: 1;
+  min-height: 40px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: var(--t-text-font, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vb-k7m-gray);
+  cursor: pointer;
+  transition: background-color .2s ease-out, color .2s ease-out;
+}
+.vb-k7m-seg__btn.is-active { background: #ffffff; border-color: var(--vb-k7m-line); color: var(--vb-k7m-black); }
+.vb-k7m-seg__btn:focus-visible { outline: 2px solid var(--vb-k7m-burgundy); outline-offset: 0; }
+.vb-k7m-auth__form { margin-top: 20px; }
+.vb-k7m-agree { display: flex; align-items: flex-start; gap: 10px; margin-top: 4px; cursor: pointer; }
+.vb-k7m-agree__text { font-size: 13px; line-height: 1.5; color: var(--vb-k7m-gray); }
+.vb-k7m-agree__text a { color: var(--vb-k7m-burgundy); font-weight: 600; text-underline-offset: 2px; }
+.vb-k7m-auth__alt { margin: 18px 0 0; font-size: 14px; text-align: center; color: var(--vb-k7m-gray); }
+.vb-k7m-auth__alt a { color: var(--vb-k7m-burgundy); font-weight: 700; text-decoration: none; }
+.vb-k7m-auth__alt a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Адаптив */
+@media (max-width: 480px) {
+  .vb-k7m__gallery { grid-template-columns: minmax(0, 1fr); }
+  .vb-k7m-phone { border-width: 8px; border-radius: 40px; }
+  .vb-k7m-screen { border-radius: 32px; height: 700px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vb-k7m-privgroup,
+  .vb-k7m-bar { animation: none; }
+  .vb-k7m-field,
+  .vb-k7m-btn,
+  .vb-k7m-tab,
+  .vb-k7m-check::after,
+  .vb-k7m-req__card,
+  .vb-k7m-seg__btn,
+  .vb-k7m-upload,
+  .vb-k7m-tile .vb-k7m-ph { transition: none; }
+}
+</style>
+
+<div class="vb-k7m__inner">
+  <h2 class="vb-k7m__heading" id="vb-k7m-title">Фотобудка — мобильное приложение</h2>
+  <p class="vb-k7m__lead">Девять экранов нативной версии сервиса: макет 375px, фон #FAFAFA, акцент #800020, скругления 8px, высота контролов от 48px, нижняя навигация на внутренних экранах.</p>
+
+  <div class="vb-k7m__gallery">
+
+    <!-- 1. Авторизация / Регистрация -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">1</span> Авторизация / Регистрация</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-auth">
+              <div class="vb-k7m-auth__logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.6A1.6 1.6 0 0 1 5.6 7h2.2L9 4.8h6L16.2 7h2.2A1.6 1.6 0 0 1 20 8.6v7.8A1.6 1.6 0 0 1 18.4 18H5.6A1.6 1.6 0 0 1 4 16.4z"/><circle cx="12" cy="12.4" r="3.1"/></svg></div>
+              <h3 class="vb-k7m-auth__title">Регистрация</h3>
+              <div class="vb-k7m-seg" role="group" aria-label="Режим авторизации">
+                <button class="vb-k7m-seg__btn" type="button" data-vb-seg>Вход</button>
+                <button class="vb-k7m-seg__btn is-active" type="button" data-vb-seg>Регистрация</button>
+              </div>
+              <div class="vb-k7m-auth__form">
+                <div class="vb-k7m-group">
+                  <label class="vb-k7m-lab" for="vb-k7m-a-name">Имя</label>
+                  <input class="vb-k7m-field" id="vb-k7m-a-name" type="text" placeholder="Как вас будут видеть">
+                </div>
+                <div class="vb-k7m-group">
+                  <label class="vb-k7m-lab" for="vb-k7m-a-mail">Email</label>
+                  <input class="vb-k7m-field" id="vb-k7m-a-mail" type="email" placeholder="you@example.com">
+                </div>
+                <div class="vb-k7m-group">
+                  <label class="vb-k7m-lab" for="vb-k7m-a-pass">Пароль</label>
+                  <div class="vb-k7m-fieldwrap">
+                    <input class="vb-k7m-field" id="vb-k7m-a-pass" type="password" placeholder="Не короче 8 символов">
+                    <button class="vb-k7m-eye" type="button" data-vb-eye="vb-k7m-a-pass" aria-label="Показать пароль">Показать</button>
+                  </div>
+                </div>
+                <div class="vb-k7m-group">
+                  <label class="vb-k7m-lab" for="vb-k7m-a-role">Кто вы?</label>
+                  <div class="vb-k7m-selectwrap">
+                    <select class="vb-k7m-field vb-k7m-select" id="vb-k7m-a-role">
+                      <option>Заказчик</option>
+                      <option>Фотограф</option>
+                    </select>
+                    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </div>
+                <label class="vb-k7m-agree" for="vb-k7m-a-agree">
+                  <input class="vb-k7m-check" id="vb-k7m-a-agree" type="checkbox" checked>
+                  <span class="vb-k7m-agree__text">Я принимаю <a href="#">правила сервиса</a> и согласен на обработку данных</span>
+                </label>
+                <button class="vb-k7m-btn" type="button" style="margin-top:20px">Создать аккаунт</button>
+                <p class="vb-k7m-auth__alt">Уже есть аккаунт? <a href="#">Войти</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 2. Главная (Каталог) -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">2</span> Главная — каталог</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr vb-k7m-hdr--brand">
+            <span class="vb-k7m-logo">Фотобудка</span>
+            <button class="vb-k7m-iconbtn" type="button" aria-label="Уведомления">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5a5 5 0 0 0-5 5v3.6L5.5 16h13L17 13.1V9.5a5 5 0 0 0-5-5z"/><path d="M10 19a2 2 0 0 0 4 0"/><circle cx="17.6" cy="6.4" r="3.4" fill="#800020" stroke="#ffffff" stroke-width="1.6"/></svg>
+            </button>
+          </header>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-search">
+              <svg viewBox="0 0 18 18" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12.2 12.2 16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <input class="vb-k7m-field" type="search" placeholder="Имя, город или жанр" aria-label="Поиск фотографов">
+            </div>
+            <div class="vb-k7m-chips" role="group" aria-label="Жанры">
+              <span class="vb-k7m-chip vb-k7m-chip--active">Свадьбы</span>
+              <span class="vb-k7m-chip">Портрет</span>
+              <span class="vb-k7m-chip">Репортаж</span>
+              <span class="vb-k7m-chip">Love story</span>
+            </div>
+            <ul class="vb-k7m-list">
+              <li class="vb-k7m-pcard">
+                <span class="vb-k7m-ph vb-k7m-pcard__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-pcard__body">
+                  <span class="vb-k7m-pcard__name">Анна Соколова</span>
+                  <span class="vb-k7m-pcard__city">Москва</span>
+                  <span class="vb-k7m-pcard__price">от 7 000 ₽</span>
+                </span>
+              </li>
+              <li class="vb-k7m-pcard">
+                <span class="vb-k7m-ph vb-k7m-ph--b vb-k7m-pcard__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-pcard__body">
+                  <span class="vb-k7m-pcard__name">Илья Морозов</span>
+                  <span class="vb-k7m-pcard__city">Санкт-Петербург</span>
+                  <span class="vb-k7m-pcard__price">от 5 000 ₽</span>
+                </span>
+              </li>
+              <li class="vb-k7m-pcard">
+                <span class="vb-k7m-ph vb-k7m-ph--c vb-k7m-pcard__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-pcard__body">
+                  <span class="vb-k7m-pcard__name">Мария Волкова</span>
+                  <span class="vb-k7m-pcard__city">Казань</span>
+                  <span class="vb-k7m-pcard__price">от 4 500 ₽</span>
+                </span>
+              </li>
+              <li class="vb-k7m-pcard">
+                <span class="vb-k7m-ph vb-k7m-ph--d vb-k7m-pcard__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-pcard__body">
+                  <span class="vb-k7m-pcard__name">Пётр Смирнов</span>
+                  <span class="vb-k7m-pcard__city">Сочи</span>
+                  <span class="vb-k7m-pcard__price">от 6 000 ₽</span>
+                </span>
+              </li>
+            </ul>
+          </div>
+          <nav class="vb-k7m-tabs" aria-label="Навигация">
+            <button class="vb-k7m-tab is-active" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.2V20h11v-9.8"/></svg><span>Главная</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.6c1.4-3.3 4-5 7-5s5.6 1.7 7 5"/></svg><span>Профиль</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4.5 8.2 7.5 5 7.5-5"/></svg><span>Заявки</span></button>
+          </nav>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 3. Профиль фотографа (заказчик) -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">3</span> Профиль фотографа — заказчик</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr">
+            <button class="vb-k7m-iconbtn" type="button" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <span class="vb-k7m-hdr__title"></span>
+            <button class="vb-k7m-iconbtn" type="button" aria-label="Поделиться"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="m8.5 7.5 3.5-3.5 3.5 3.5"/><path d="M5.5 13v5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-5"/></svg></button>
+          </header>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-profile">
+              <span class="vb-k7m-ava vb-k7m-ava--100">АС</span>
+              <h3 class="vb-k7m-profile__name">Анна Соколова</h3>
+              <p class="vb-k7m-profile__city">Москва</p>
+              <div class="vb-k7m-profile__chips">
+                <span class="vb-k7m-chip">Свадьбы</span>
+                <span class="vb-k7m-chip">Портрет</span>
+                <span class="vb-k7m-chip">Love story</span>
+              </div>
+              <p class="vb-k7m-profile__price">от 7 000 ₽ за час</p>
+            </div>
+            <p class="vb-k7m-desc" id="vb-k7m-desc">Снимаю свадьбы и семейные истории восемь лет: работаю без постановки, только живые кадры и естественный свет. Помогаю с выбором локации, составляю тайминг дня и отдаю готовый альбом за две недели. Среди работ — более сотни свадеб в Москве и области, а также съёмки для брендов одежды и локальных кафе. Каждый проект веду лично, без передачи съёмки ассистентам.</p>
+            <button class="vb-k7m-more" type="button" data-vb-desc aria-expanded="false">Показать полностью</button>
+            <h4 class="vb-k7m-sect">Проекты</h4>
+            <div class="vb-k7m-carousel">
+              <span class="vb-k7m-ph vb-k7m-carousel__item"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Проект: свадьба" loading="lazy"></span>
+              <span class="vb-k7m-ph vb-k7m-ph--b vb-k7m-carousel__item"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Проект: портрет" loading="lazy"></span>
+              <span class="vb-k7m-ph vb-k7m-ph--c vb-k7m-carousel__item"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Проект: love story" loading="lazy"></span>
+            </div>
+            <div class="vb-k7m-dots" aria-hidden="true"><span class="is-active"></span><span></span><span></span></div>
+          </div>
+          <div class="vb-k7m-sticky">
+            <button class="vb-k7m-btn" type="button">Оставить заявку</button>
+          </div>
+          <nav class="vb-k7m-tabs" aria-label="Навигация">
+            <button class="vb-k7m-tab is-active" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.2V20h11v-9.8"/></svg><span>Главная</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.6c1.4-3.3 4-5 7-5s5.6 1.7 7 5"/></svg><span>Профиль</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4.5 8.2 7.5 5 7.5-5"/></svg><span>Заявки</span></button>
+          </nav>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 4. Профиль фотографа (владелец) -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">4</span> Профиль — владелец</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr"><span class="vb-k7m-hdr__title">Профиль</span></header>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-profile">
+              <span class="vb-k7m-ava vb-k7m-ava--100">АС</span>
+              <h3 class="vb-k7m-profile__name">Анна Соколова</h3>
+              <p class="vb-k7m-profile__city">Москва</p>
+            </div>
+            <div class="vb-k7m-btnrow" style="margin-top:20px">
+              <button class="vb-k7m-btn vb-k7m-btn--gray" type="button">Редактировать</button>
+              <button class="vb-k7m-btn vb-k7m-btn--gray" type="button">Добавить проект</button>
+            </div>
+            <h4 class="vb-k7m-sect">Мои проекты</h4>
+            <ul class="vb-k7m-list">
+              <li class="vb-k7m-proj">
+                <span class="vb-k7m-ph vb-k7m-proj__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-proj__body">
+                  <span class="vb-k7m-proj__name">Свадьба Марии и Петра</span>
+                  <span class="vb-k7m-proj__date">12 июня 2025</span>
+                  <span class="vb-k7m-badge">Публичный</span>
+                </span>
+                <button class="vb-k7m-iconbtn" type="button" aria-label="Действия с проектом" style="width:36px;height:36px"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
+              </li>
+              <li class="vb-k7m-proj">
+                <span class="vb-k7m-ph vb-k7m-ph--b vb-k7m-proj__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-proj__body">
+                  <span class="vb-k7m-proj__name">Портрет в мастерской</span>
+                  <span class="vb-k7m-proj__date">3 июня 2025</span>
+                  <span class="vb-k7m-badge vb-k7m-badge--priv">Приватный</span>
+                </span>
+                <button class="vb-k7m-iconbtn" type="button" aria-label="Действия с проектом" style="width:36px;height:36px"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
+              </li>
+              <li class="vb-k7m-proj">
+                <span class="vb-k7m-ph vb-k7m-ph--c vb-k7m-proj__img"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="" loading="lazy"></span>
+                <span class="vb-k7m-proj__body">
+                  <span class="vb-k7m-proj__name">Семейный пикник</span>
+                  <span class="vb-k7m-proj__date">24 мая 2025</span>
+                  <span class="vb-k7m-badge">Публичный</span>
+                </span>
+                <button class="vb-k7m-iconbtn" type="button" aria-label="Действия с проектом" style="width:36px;height:36px"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
+              </li>
+            </ul>
+          </div>
+          <nav class="vb-k7m-tabs" aria-label="Навигация">
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.2V20h11v-9.8"/></svg><span>Главная</span></button>
+            <button class="vb-k7m-tab is-active" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.6c1.4-3.3 4-5 7-5s5.6 1.7 7 5"/></svg><span>Профиль</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4.5 8.2 7.5 5 7.5-5"/></svg><span>Заявки</span></button>
+          </nav>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 5. Мои заявки (фотограф) -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">5</span> Входящие заявки — фотограф</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr"><span class="vb-k7m-hdr__title">Заявки</span></header>
+          <div class="vb-k7m-body">
+            <h3 class="vb-k7m-pagetitle">Входящие заявки</h3>
+            <p class="vb-k7m-pagesub">4 новых</p>
+            <ul class="vb-k7m-list">
+              <li class="vb-k7m-req">
+                <span class="vb-k7m-req__action" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h3l1.5 4-2 1.5a12 12 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A15.5 15.5 0 0 1 5 6.1 1.5 1.5 0 0 1 6.5 4.5z"/></svg><span>Связаться</span></span>
+                <div class="vb-k7m-req__card" data-vb-swipe>
+                  <div class="vb-k7m-req__top"><p class="vb-k7m-req__name">Мария Иванова</p><span class="vb-k7m-badge vb-k7m-badge--wait">Ожидает</span></div>
+                  <p class="vb-k7m-req__meta">12 июня · Свадьба</p>
+                  <p class="vb-k7m-req__note">Церемония в загородном клубе, около 40 гостей</p>
+                </div>
+              </li>
+              <li class="vb-k7m-req">
+                <span class="vb-k7m-req__action" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h3l1.5 4-2 1.5a12 12 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A15.5 15.5 0 0 1 5 6.1 1.5 1.5 0 0 1 6.5 4.5z"/></svg><span>Связаться</span></span>
+                <div class="vb-k7m-req__card" data-vb-swipe>
+                  <div class="vb-k7m-req__top"><p class="vb-k7m-req__name">Ольга Петрова</p><span class="vb-k7m-badge vb-k7m-badge--wait">Ожидает</span></div>
+                  <p class="vb-k7m-req__meta">28 июня · Love story</p>
+                  <p class="vb-k7m-req__note">Прогулка по старому городу на закате, в будни</p>
+                </div>
+              </li>
+              <li class="vb-k7m-req">
+                <span class="vb-k7m-req__action" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h3l1.5 4-2 1.5a12 12 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A15.5 15.5 0 0 1 5 6.1 1.5 1.5 0 0 1 6.5 4.5z"/></svg><span>Связаться</span></span>
+                <div class="vb-k7m-req__card" data-vb-swipe>
+                  <div class="vb-k7m-req__top"><p class="vb-k7m-req__name">Дмитрий Кузнецов</p><span class="vb-k7m-badge vb-k7m-badge--wait">Ожидает</span></div>
+                  <p class="vb-k7m-req__meta">5 июля · Репортаж</p>
+                  <p class="vb-k7m-req__note">Корпоратив, съёмка выступлений и гостей, до 3 часов</p>
+                </div>
+              </li>
+              <li class="vb-k7m-req">
+                <span class="vb-k7m-req__action" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h3l1.5 4-2 1.5a12 12 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A15.5 15.5 0 0 1 5 6.1 1.5 1.5 0 0 1 6.5 4.5z"/></svg><span>Связаться</span></span>
+                <div class="vb-k7m-req__card" data-vb-swipe>
+                  <div class="vb-k7m-req__top"><p class="vb-k7m-req__name">Елена Смирнова</p><span class="vb-k7m-badge vb-k7m-badge--wait">Ожидает</span></div>
+                  <p class="vb-k7m-req__meta">19 июля · Семейная съёмка</p>
+                  <p class="vb-k7m-req__note">Фотопрогулка в парке с двумя детьми, утром</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <nav class="vb-k7m-tabs" aria-label="Навигация">
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.2V20h11v-9.8"/></svg><span>Главная</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.6c1.4-3.3 4-5 7-5s5.6 1.7 7 5"/></svg><span>Профиль</span></button>
+            <button class="vb-k7m-tab is-active" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4.5 8.2 7.5 5 7.5-5"/></svg><span>Заявки</span></button>
+          </nav>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 6. Личный кабинет (заказчик) -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">6</span> Личный кабинет — заказчик</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr"><span class="vb-k7m-hdr__title">Кабинет</span></header>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-profile">
+              <span class="vb-k7m-ava vb-k7m-ava--80">МИ</span>
+              <h3 class="vb-k7m-profile__name vb-k7m-profile__name--sm">Мария Иванова</h3>
+              <p class="vb-k7m-profile__city">maria@example.com</p>
+            </div>
+            <div class="vb-k7m-menu" style="margin-top:22px">
+              <button class="vb-k7m-menu__row" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.2-4.2L16 5l3 3L8.2 18.8z"/><path d="M14.5 6.5l3 3"/></svg>
+                <span>Изменить имя</span>
+                <svg class="vb-k7m-chev" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button class="vb-k7m-menu__row" type="button" data-vb-acc aria-expanded="true" aria-controls="vb-k7m-myreq">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4.5 8.2 7.5 5 7.5-5"/></svg>
+                <span>Мои заявки</span>
+                <svg class="vb-k7m-chev" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="vb-k7m-menu__panel" id="vb-k7m-myreq">
+                <div class="vb-k7m-minireq">
+                  <span><span class="vb-k7m-minireq__t">Свадьба</span><span class="vb-k7m-minireq__d">12 июня · Анна Соколова</span></span>
+                  <span class="vb-k7m-badge vb-k7m-badge--wait">Ожидает</span>
+                </div>
+                <div class="vb-k7m-minireq">
+                  <span><span class="vb-k7m-minireq__t">Портрет</span><span class="vb-k7m-minireq__d">30 мая · Илья Морозов</span></span>
+                  <span class="vb-k7m-badge vb-k7m-badge--ok">Принята</span>
+                </div>
+              </div>
+              <button class="vb-k7m-menu__row vb-k7m-menu__row--danger" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7"/><path d="M17 8.5 20.5 12 17 15.5M20 12h-9"/></svg>
+                <span>Выйти</span>
+              </button>
+            </div>
+          </div>
+          <nav class="vb-k7m-tabs" aria-label="Навигация">
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4l8 7.2"/><path d="M6.5 10.2V20h11v-9.8"/></svg><span>Главная</span></button>
+            <button class="vb-k7m-tab is-active" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.6c1.4-3.3 4-5 7-5s5.6 1.7 7 5"/></svg><span>Профиль</span></button>
+            <button class="vb-k7m-tab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4.5 8.2 7.5 5 7.5-5"/></svg><span>Заявки</span></button>
+          </nav>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 7. Создание проекта -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">7</span> Новый проект — фотограф</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr">
+            <button class="vb-k7m-iconbtn" type="button" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <span class="vb-k7m-hdr__title">Новый проект</span>
+            <span class="vb-k7m-iconbtn" aria-hidden="true"></span>
+          </header>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-group">
+              <label class="vb-k7m-lab" for="vb-k7m-p-name">Название</label>
+              <input class="vb-k7m-field" id="vb-k7m-p-name" type="text" placeholder="Например, свадьба Марии и Петра">
+            </div>
+            <div class="vb-k7m-group">
+              <label class="vb-k7m-lab" for="vb-k7m-p-genre">Жанр</label>
+              <div class="vb-k7m-selectwrap">
+                <select class="vb-k7m-field vb-k7m-select" id="vb-k7m-p-genre">
+                  <option>Свадьба</option>
+                  <option>Портрет</option>
+                  <option>Репортаж</option>
+                  <option>Семейная съёмка</option>
+                </select>
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="vb-k7m-group">
+              <label class="vb-k7m-lab" for="vb-k7m-p-date">Дата</label>
+              <input class="vb-k7m-field" id="vb-k7m-p-date" type="date" value="2025-06-12">
+            </div>
+            <label class="vb-k7m-priv" for="vb-k7m-p-priv">
+              <input class="vb-k7m-check" id="vb-k7m-p-priv" type="checkbox" checked data-vb-priv>
+              <span class="vb-k7m-priv__text">Приватный проект (по паролю)</span>
+            </label>
+            <div class="vb-k7m-privgroup" id="vb-k7m-p-passgroup">
+              <label class="vb-k7m-lab" for="vb-k7m-p-pass">Пароль доступа</label>
+              <input class="vb-k7m-field" id="vb-k7m-p-pass" type="text" placeholder="Придумайте пароль">
+            </div>
+            <div style="margin-top:20px">
+              <button class="vb-k7m-upload" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5V4.5M12 4.5 8.5 8M12 4.5 15.5 8"/><path d="M4.5 15v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3"/></svg>
+                Выбрать файлы
+              </button>
+              <p class="vb-k7m-hint">JPG, PNG, HEIC до 20 МБ на файл</p>
+            </div>
+          </div>
+          <div class="vb-k7m-sticky">
+            <button class="vb-k7m-btn" type="button">Создать проект</button>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 8. Просмотр проекта -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">8</span> Просмотр проекта — альбом</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status vb-k7m-status--w"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <header class="vb-k7m-hdr">
+            <button class="vb-k7m-iconbtn" type="button" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <span class="vb-k7m-hdr__title vb-k7m-hdr__title--lg">Свадьба Марии и Петра</span>
+            <button class="vb-k7m-iconbtn" type="button" aria-label="Ещё"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
+          </header>
+          <div class="vb-k7m-body">
+            <p class="vb-k7m-meta">12 июня 2025 · Свадьба</p>
+            <div class="vb-k7m-bar" id="vb-k7m-bar">
+              <span class="vb-k7m-bar__text" id="vb-k7m-bar-count">Выбрано фото: 3</span>
+              <button class="vb-k7m-bar__btn" type="button" id="vb-k7m-del">Удалить</button>
+            </div>
+            <ul class="vb-k7m-grid" id="vb-k7m-grid">
+              <li class="vb-k7m-tile is-checked">
+                <input class="vb-k7m-check vb-k7m-tile__check" type="checkbox" checked aria-label="Выбрать фото 1">
+                <span class="vb-k7m-ph"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Фото 1" loading="lazy"></span>
+              </li>
+              <li class="vb-k7m-tile is-checked">
+                <input class="vb-k7m-check vb-k7m-tile__check" type="checkbox" checked aria-label="Выбрать фото 2">
+                <span class="vb-k7m-ph vb-k7m-ph--b"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Фото 2" loading="lazy"></span>
+              </li>
+              <li class="vb-k7m-tile is-checked">
+                <input class="vb-k7m-check vb-k7m-tile__check" type="checkbox" checked aria-label="Выбрать фото 3">
+                <span class="vb-k7m-ph vb-k7m-ph--c"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Фото 3" loading="lazy"></span>
+              </li>
+              <li class="vb-k7m-tile">
+                <input class="vb-k7m-check vb-k7m-tile__check" type="checkbox" aria-label="Выбрать фото 4">
+                <span class="vb-k7m-ph vb-k7m-ph--d"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Фото 4" loading="lazy"></span>
+              </li>
+              <li class="vb-k7m-tile">
+                <input class="vb-k7m-check vb-k7m-tile__check" type="checkbox" aria-label="Выбрать фото 5">
+                <span class="vb-k7m-ph vb-k7m-ph--e"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Фото 5" loading="lazy"></span>
+              </li>
+              <li class="vb-k7m-tile">
+                <input class="vb-k7m-check vb-k7m-tile__check" type="checkbox" aria-label="Выбрать фото 6">
+                <span class="vb-k7m-ph"><img src="https://static.tildacdn.com/lib/icons/tilda/camera_photo.svg" alt="Фото 6" loading="lazy"></span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 9. Экран блокировки -->
+    <figure class="vb-k7m-item">
+      <figcaption class="vb-k7m-item__label"><span class="vb-k7m-item__num">9</span> Приватный проект — блокировка</figcaption>
+      <div class="vb-k7m-phone">
+        <div class="vb-k7m-screen">
+          <div class="vb-k7m-status"><span>9:41</span><svg class="vb-k7m-status__icons" viewBox="0 0 66 12" aria-hidden="true" focusable="false"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><path d="M26 5.4a8.6 8.6 0 0 1 11 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M28.4 7.9a5.4 5.4 0 0 1 6.2 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M31.5 10.4h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="44" y="2" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="46" y="4" width="12" height="5" rx="1"/><rect x="63" y="4.6" width="2" height="3.4" rx="1"/></svg></div>
+          <div class="vb-k7m-body">
+            <div class="vb-k7m-lock">
+              <span class="vb-k7m-lock__circle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/></svg></span>
+              <h3 class="vb-k7m-lock__title">Приватный проект</h3>
+              <p class="vb-k7m-lock__text">Введите пароль, который вам дал фотограф</p>
+              <div class="vb-k7m-lock__form">
+                <div class="vb-k7m-fieldwrap">
+                  <input class="vb-k7m-field" type="password" placeholder="Пароль доступа" aria-label="Пароль доступа">
+                  <button class="vb-k7m-eye vb-k7m-eye--icon" type="button" data-vb-eye-icon aria-label="Показать пароль">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 12S6.4 6.5 12 6.5 21.2 12 21.2 12 17.6 17.5 12 17.5 2.8 12 2.8 12z"/><circle cx="12" cy="12" r="2.9"/></svg>
+                  </button>
+                </div>
+                <button class="vb-k7m-btn" type="button" style="margin-top:12px">Открыть</button>
+                <div style="text-align:center"><a class="vb-k7m-lock__link" href="#">Получить пароль у фотографа</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('vb-k7m-root');
+  if (!root) return;
+  var each = function (list, fn) { Array.prototype.forEach.call(list, fn); };
+
+  /* Показать / скрыть пароль */
+  each(root.querySelectorAll('[data-vb-eye]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.getAttribute('data-vb-eye'));
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'Скрыть' : 'Показать';
+      btn.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
+    });
+  });
+  each(root.querySelectorAll('[data-vb-eye-icon]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var input = btn.parentNode ? btn.parentNode.querySelector('input') : null;
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-label', show ? 'Скрыть пароль' : 'Показать пароль');
+    });
+  });
+
+  /* Нижняя навигация — переключение активного таба */
+  each(root.querySelectorAll('.vb-k7m-tabs'), function (bar) {
+    var items = bar.querySelectorAll('.vb-k7m-tab');
+    each(items, function (item) {
+      item.addEventListener('click', function () {
+        each(items, function (i) { i.classList.remove('is-active'); });
+        item.classList.add('is-active');
+      });
+    });
+  });
+
+  /* Сегмент «Вход / Регистрация» */
+  each(root.querySelectorAll('.vb-k7m-seg'), function (seg) {
+    var btns = seg.querySelectorAll('[data-vb-seg]');
+    each(btns, function (b) {
+      b.addEventListener('click', function () {
+        each(btns, function (i) { i.classList.remove('is-active'); });
+        b.classList.add('is-active');
+      });
+    });
+  });
+
+  /* Описание: показать полностью */
+  each(root.querySelectorAll('[data-vb-desc]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var text = document.getElementById('vb-k7m-desc');
+      if (!text) return;
+      var open = text.classList.toggle('is-open');
+      btn.textContent = open ? 'Свернуть' : 'Показать полностью';
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+
+  /* Аккордеон «Мои заявки» */
+  each(root.querySelectorAll('[data-vb-acc]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var panel = document.getElementById(btn.getAttribute('aria-controls'));
+      if (!panel) return;
+      var open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      panel.hidden = open;
+    });
+  });
+
+  /* Приватный проект → поле пароля */
+  each(root.querySelectorAll('[data-vb-priv]'), function (box) {
+    box.addEventListener('change', function () {
+      var group = document.getElementById('vb-k7m-p-passgroup');
+      if (!group) return;
+      group.hidden = !box.checked;
+      if (!box.checked) {
+        var input = document.getElementById('vb-k7m-p-pass');
+        if (input) input.value = '';
+      }
+    });
+  });
+
+  /* Выбор фото в альбоме */
+  var grid = document.getElementById('vb-k7m-grid');
+  var bar = document.getElementById('vb-k7m-bar');
+  var countEl = document.getElementById('vb-k7m-bar-count');
+  var del = document.getElementById('vb-k7m-del');
+  var syncPhotos = function () {
+    if (!grid || !bar || !countEl) return;
+    var checked = grid.querySelectorAll('.vb-k7m-tile__check:checked');
+    countEl.textContent = 'Выбрано фото: ' + checked.length;
+    bar.hidden = checked.length === 0;
+    each(grid.querySelectorAll('.vb-k7m-tile'), function (tile) {
+      var box = tile.querySelector('.vb-k7m-tile__check');
+      tile.classList.toggle('is-checked', !!(box && box.checked));
+    });
+  };
+  if (grid) {
+    grid.addEventListener('change', function (e) {
+      if (e.target && e.target.classList && e.target.classList.contains('vb-k7m-tile__check')) syncPhotos();
+    });
+  }
+  if (del && grid) {
+    del.addEventListener('click', function () {
+      each(grid.querySelectorAll('.vb-k7m-tile'), function (tile) {
+        var box = tile.querySelector('.vb-k7m-tile__check');
+        if (box && box.checked && tile.parentNode) tile.parentNode.removeChild(tile);
+      });
+      syncPhotos();
+    });
+  }
+  syncPhotos();
+
+  /* Свайп влево по карточке заявки */
+  var OPEN = -96;
+  each(root.querySelectorAll('[data-vb-swipe]'), function (card) {
+    var startX = 0;
+    var base = 0;
+    var current = 0;
+    var active = false;
+    card.addEventListener('pointerdown', function (e) {
+      active = true;
+      startX = e.clientX;
+      base = current;
+      card.classList.add('is-dragging');
+    });
+    card.addEventListener('pointermove', function (e) {
+      if (!active) return;
+      var dx = e.clientX - startX;
+      var next = Math.min(0, Math.max(OPEN, base + dx));
+      current = next;
+      card.style.transform = 'translateX(' + next + 'px)';
+    });
+    var end = function () {
+      if (!active) return;
+      active = false;
+      card.classList.remove('is-dragging');
+      current = current < OPEN * 0.4 ? OPEN : 0;
+      card.style.transform = 'translateX(' + current + 'px)';
+    };
+    card.addEventListener('pointerup', end);
+    card.addEventListener('pointercancel', end);
+    card.addEventListener('pointerleave', end);
+  });
+})();
+</script>
+</section>

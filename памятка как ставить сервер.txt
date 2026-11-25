@@ -1,0 +1,20 @@
+1. Папки CLient и Server
+2. в Server написать npm init -y в cmd 
+3 потом библиотеки установить: npm i express cors cookie-parser nodemon
+4. в package.json добавить про start
+"scripts": {
+    "start": "nodemon index",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+
+5. создать index.js - заполнить из слайда 5 https://dmitryweiner.github.io/web-lectures/Express.html#/5
+6. 12 слайд в индекс.джс 
+app.use(express.json());
+
+app.post('/profile', function (req, res, next) {
+    console.log(req.body);
+    res.json(req.body);
+})
+
+7. 27 слайд
+8. 
